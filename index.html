@@ -154,7 +154,7 @@
 
     <!-- Canvas -->
     <div class="canvas-container" id="canvas-container">
-        <canvas id="collage-canvas"></canvas>
+        <canvas id="collage-canvas" tabindex="0"></canvas>
         <div class="drop-placeholder" id="drop-placeholder">
             <div class="drop-icon">&#128247;</div>
             <div class="drop-text">Drop photos here</div>
@@ -1601,34 +1601,49 @@
     // ========================================================================
     async function onPaste(e) {
         if (!collage) return;
-        // Don't intercept paste when an input is focused
+        // Don't intercept paste when user is actively typing in a text input
         var ae = document.activeElement;
-        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+        if (ae && (ae.tagName === 'TEXTAREA' ||
+            (ae.tagName === 'INPUT' && ae.type !== 'button' && ae.type !== 'checkbox' && ae.type !== 'color' && ae.type !== 'range'))) {
+            // Only block if it's a text-like input (number, text, etc.) AND the clipboard has text, not an image
+            var hasImage = false;
+            var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].type.match(/^image\//)) { hasImage = true; break; }
+            }
+            if (!hasImage) return; // let text paste go to the input
+            // If it's an image paste, intercept even if input is focused
+        }
 
         var items = (e.clipboardData || e.originalEvent.clipboardData).items;
         for (var i = 0; i < items.length; i++) {
             if (items[i].type.match(/^image\//)) {
                 e.preventDefault();
                 var file = items[i].getAsFile();
-                var ids = await imageManager.loadFiles([file]);
-                var imgId = ids[0];
-                var img = imageManager.get(imgId);
-                // Default: 2 inches wide, aspect-preserved, centered on paper
-                var defW = 2.0;
-                var defH = defW * (img.naturalHeight / img.naturalWidth);
-                var ox = (collage.paperWidth - defW) / 2;
-                var oy = (collage.paperHeight - defH) / 2;
-                var ov = createOverlay(imgId, ox, oy, defW, defH);
-                overlays.push(ov);
-                selectedOverlayId = ov.id;
-                if (interaction) interaction.selectedCellId = null;
-                dirty = true;
-                renderFileList();
-                renderOverlayList();
-                updateOverlayProps();
-                updateCellInfo();
-                document.getElementById('overlays-section').style.display = '';
-                updateStatus('Overlay added from clipboard. Drag to position.');
+                try {
+                    var ids = await imageManager.loadFiles([file]);
+                    var imgId = ids[0];
+                    var img = imageManager.get(imgId);
+                    // Default: 2 inches wide, aspect-preserved, centered on paper
+                    var defW = 2.0;
+                    var defH = defW * (img.naturalHeight / img.naturalWidth);
+                    var ox = (collage.paperWidth - defW) / 2;
+                    var oy = (collage.paperHeight - defH) / 2;
+                    var ov = createOverlay(imgId, ox, oy, defW, defH);
+                    overlays.push(ov);
+                    selectedOverlayId = ov.id;
+                    if (interaction) interaction.selectedCellId = null;
+                    dirty = true;
+                    renderFileList();
+                    renderOverlayList();
+                    updateOverlayProps();
+                    updateCellInfo();
+                    document.getElementById('overlays-section').style.display = '';
+                    updateStatus('Overlay added from clipboard. Drag to position.');
+                } catch (err) {
+                    updateStatus('Paste error: ' + err.message);
+                    console.error('Paste error:', err);
+                }
                 break;
             }
         }
@@ -1737,6 +1752,8 @@
         dirty = true;
         renderOverlayList();
         updateOverlayProps();
+        // Return focus to canvas so paste keeps working
+        canvas.focus();
         updateStatus('Overlay deleted.');
     }
 
@@ -1786,6 +1803,8 @@
 
     function onCanvasMouseDown(e) {
         if (!interaction) return;
+        // Ensure canvas has focus so paste events work
+        canvas.focus();
         var c = getCanvasCoords(e);
         interaction.onMouseDown(c[0], c[1], e.shiftKey);
         updateCellInfo();
