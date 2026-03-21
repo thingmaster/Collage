@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collage - Photo Layout Tool</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <label class="file-label" for="file-input">Load Photos</label>
+        <input type="file" id="file-input" multiple accept="image/*">
+
+        <div class="separator"></div>
+
+        <label>
+            Paper
+            <select id="paper-size">
+                <option value="11x14">11" &times; 14"</option>
+                <option value="11x17">11" &times; 17"</option>
+                <option value="8.5x11">8.5" &times; 11"</option>
+                <option value="13x19">13" &times; 19"</option>
+                <option value="custom">Custom...</option>
+            </select>
+        </label>
+
+        <div id="custom-dims">
+            <label>W <input type="number" id="paper-width" value="11" min="1" max="60" step="0.5"></label>
+            <span>&times;</span>
+            <label>H <input type="number" id="paper-height" value="14" min="1" max="60" step="0.5"></label>
+        </div>
+
+        <label>
+            DPI
+            <input type="number" id="dpi" value="300" min="72" max="600" step="1">
+        </label>
+
+        <div class="separator"></div>
+
+        <label>
+            Border
+            <input type="number" id="perimeter-margin" value="0.25" min="0" max="3" step="0.0625">
+        </label>
+
+        <label>
+            Gap
+            <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
+        </label>
+
+        <div class="separator"></div>
+
+        <button id="generate-btn" class="primary" disabled>Generate Layout</button>
+        <button id="randomize-btn" disabled>Randomize</button>
+        <button id="resize-mode-btn" disabled>Resize Cells</button>
+        <button id="export-btn" disabled>Export JPEG</button>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="section">
+            <h3>Photos <span id="photo-count" class="photo-count"></span></h3>
+            <div id="file-list" class="file-list">
+                <p class="hint">No photos loaded yet.</p>
+            </div>
+            <div id="file-drop-zone" class="file-drop-zone">
+                <span class="file-drop-text">+ Drop photos here to add</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>Selected Cell</h3>
+            <div id="cell-info">
+                <p class="hint">Click a cell to select it.</p>
+            </div>
+        </div>
+
+        <div class="section" id="image-props-section" style="display:none;">
+            <h3>Image Properties</h3>
+            <table class="props-table">
+                <tr><td class="prop-label">File</td><td id="prop-filename">-</td></tr>
+                <tr><td class="prop-label">Date</td><td id="prop-date">-</td></tr>
+                <tr><td class="prop-label">Time</td><td id="prop-time">-</td></tr>
+                <tr><td class="prop-label">Resolution</td><td id="prop-resolution">-</td></tr>
+                <tr><td class="prop-label">Cell Size</td><td id="prop-cellsize">-</td></tr>
+            </table>
+            <div style="margin-top: 8px;">
+                <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
+            </div>
+        </div>
+
+        <div class="section" id="crop-section" style="display:none;">
+            <h3>Image Crop</h3>
+            <div class="zoom-group">
+                <label>Zoom</label>
+                <input type="range" id="scale-slider" min="0" max="100" value="0">
+                <input type="number" id="zoom-input" min="100" max="500" step="1" value="100" class="zoom-number">
+                <span class="zoom-pct">%</span>
+            </div>
+            <div style="margin-top: 8px;">
+                <button id="reset-crop-btn">Reset Crop</button>
+            </div>
+        </div>
+
+        <div class="section" id="mode-indicator">
+            <div id="mode-badge" class="mode-badge mode-normal">LAYOUT MODE</div>
+            <p class="hint" id="mode-hint">Double-click margin to enter resize mode</p>
+        </div>
+
+        <div class="section instructions">
+            <h3>How to Use</h3>
+            <p>1. Load/drop photos, set paper size, click <kbd>Generate</kbd></p>
+            <p>2. Click a cell to select; drag to pan image</p>
+            <p>3. Scroll wheel on selected cell to zoom</p>
+            <p>4. Click <kbd>Resize Cells</kbd> or double-click margin</p>
+            <p>5. In resize mode, drag any edge to resize</p>
+            <p>6. <kbd>Shift</kbd>+drag to swap images between cells</p>
+            <p>7. Uncheck photos in list to exclude from layout</p>
+            <p>8. Click <kbd>Export JPEG</kbd> to save</p>
+        </div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-container" id="canvas-container">
+        <canvas id="collage-canvas"></canvas>
+        <div class="drop-placeholder" id="drop-placeholder">
+            <div class="drop-icon">&#128247;</div>
+            <div class="drop-text">Drop photos here</div>
+            <div class="drop-subtext">or use the Load Photos button above</div>
+        </div>
+    </div>
+
+    <!-- Full-window drop overlay -->
+    <div class="drop-overlay" id="drop-overlay">
+        <div class="drop-overlay-content">
+            <div class="drop-overlay-icon">&#128247;</div>
+            <div class="drop-overlay-text">Drop photos to add</div>
+        </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">Ready</div>
+
+    <script>
+    // ========================================================================
+    // Utils
+    // ========================================================================
+    function clamp(val, min, max) { return Math.min(Math.max(val, min), max); }
+
+    function pointInRect(px, py, r) {
+        return px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height;
+    }
+
+    function randRange(min, max) { return min + Math.random() * (max - min); }
+
+    // ========================================================================
+    // EXIF date extraction
+    // ========================================================================
+    async function extractExifDate(file) {
+        try {
+            if (!file.type || !file.type.match(/image\/jpe?g/i)) return null;
+            var buf = await file.slice(0, 65536).arrayBuffer();
+            var view = new DataView(buf);
+            if (view.getUint16(0) !== 0xFFD8) return null;
+            var offset = 2;
+            while (offset < view.byteLength - 4) {
+                var marker = view.getUint16(offset);
+                if (marker === 0xFFE1) {
+                    var length = view.getUint16(offset + 2);
+                    var exifStart = offset + 4;
+                    if (view.getUint32(exifStart) === 0x45786966 && view.getUint16(exifStart + 4) === 0x0000) {
+                        return parseExifForDate(view, exifStart + 6);
+                    }
+                }
+                if ((marker & 0xFF00) !== 0xFF00) break;
+                offset += 2 + view.getUint16(offset + 2);
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function parseExifForDate(view, tiffStart) {
+        try {
+            var le = view.getUint16(tiffStart) === 0x4949;
+            var g16 = function(o) { return view.getUint16(tiffStart + o, le); };
+            var g32 = function(o) { return view.getUint32(tiffStart + o, le); };
+            function readIFD(ifdOff) {
+                var count = g16(ifdOff);
+                for (var i = 0; i < count; i++) {
+                    var eo = ifdOff + 2 + i * 12;
+                    var tag = g16(eo);
+                    if (tag === 0x9003 || tag === 0x0132) {
+                        var strOff = g32(eo + 8);
+                        var s = '';
+                        for (var j = 0; j < 19; j++) s += String.fromCharCode(view.getUint8(tiffStart + strOff + j));
+                        return s;
+                    }
+                    if (tag === 0x8769) { var r = readIFD(g32(eo + 8)); if (r) return r; }
+                }
+                return null;
+            }
+            return readIFD(g32(4));
+        } catch (e) { return null; }
+    }
+
+    function parseExifDateString(s) {
+        if (!s || s.length < 19) return null;
+        return { date: s.substring(0, 10).replace(/:/g, '-'), time: s.substring(11, 19) };
+    }
+
+    // ========================================================================
+    // Collage Model
+    // ========================================================================
+    var nextCellId = 0;
+
+    function createCell(x, y, w, h) {
+        return { id: nextCellId++, x: x, y: y, width: w, height: h,
+                 imageId: null, imageOffsetX: 0, imageOffsetY: 0, imageScale: 1 };
+    }
+
+    function createCollage(pw, ph, dpi, pm, gm) {
+        return { paperWidth: pw, paperHeight: ph, dpi: dpi,
+                 perimeterMargin: pm, gutterMargin: gm, cells: [] };
+    }
+
+    function computeDefaultFit(cell, natW, natH, dpi) {
+        var cpw = cell.width * dpi, cph = cell.height * dpi;
+        var sc = Math.max(cpw / natW, cph / natH);
+        return { imageScale: sc,
+                 imageOffsetX: (natW * sc - cpw) / 2 / sc,
+                 imageOffsetY: (natH * sc - cph) / 2 / sc };
+    }
+
+    // ========================================================================
+    // BSP Layout
+    // ========================================================================
+    var MIN_CELL_SIZE = 0.75;
+
+    function generateLayout(pw, ph, pm, gm, n) {
+        var usable = { x: pm, y: pm, width: pw - 2*pm, height: ph - 2*pm };
+        return bspSplit(usable, n, gm).map(function(r) { return createCell(r.x, r.y, r.width, r.height); });
+    }
+
+    function bspSplit(b, n, g) {
+        if (n <= 0) return [];
+        if (n === 1) return [{ x: b.x, y: b.y, width: b.width, height: b.height }];
+        var hSplit = b.width > b.height ? Math.random() < 0.8 : Math.random() < 0.2;
+        var nL = clamp(Math.round(randRange(0.3, 0.7) * n), 1, n - 1), nR = n - nL;
+        var ratio = clamp((nL / n) + randRange(-0.1, 0.1), 0.25, 0.75);
+        var hg = g / 2;
+        if (hSplit) {
+            var sx = b.x + b.width * ratio;
+            var lw = sx - b.x - hg, rw = b.x + b.width - sx - hg;
+            if (lw < MIN_CELL_SIZE || rw < MIN_CELL_SIZE) {
+                sx = b.x + b.width / 2; lw = sx - b.x - hg; rw = b.x + b.width - sx - hg;
+            }
+            return bspSplit({x:b.x, y:b.y, width:lw, height:b.height}, nL, g)
+                .concat(bspSplit({x:sx+hg, y:b.y, width:rw, height:b.height}, nR, g));
+        } else {
+            var sy = b.y + b.height * ratio;
+            var th = sy - b.y - hg, bh = b.y + b.height - sy - hg;
+            if (th < MIN_CELL_SIZE || bh < MIN_CELL_SIZE) {
+                sy = b.y + b.height / 2; th = sy - b.y - hg; bh = b.y + b.height - sy - hg;
+            }
+            return bspSplit({x:b.x, y:b.y, width:b.width, height:th}, nL, g)
+                .concat(bspSplit({x:b.x, y:sy+hg, width:b.width, height:bh}, nR, g));
+        }
+    }
+
+    // ========================================================================
+    // Edge detection between cells
+    // ========================================================================
+    function findAllEdges(cells, gutter) {
+        // An "edge" is a shared border between two adjacent cells across a gutter gap.
+        // Returns array of { orientation: 'h'|'v', cells: [{cell, side}...],
+        //   x1,y1,x2,y2 (midline of the gutter), pos (the coordinate that moves) }
+        var edges = [];
+        var eps = gutter + 0.02;
+        for (var i = 0; i < cells.length; i++) {
+            for (var j = i + 1; j < cells.length; j++) {
+                var a = cells[i], b = cells[j];
+                var edge = detectEdge(a, b, gutter, eps);
+                if (edge) edges.push(edge);
+            }
+        }
+        // Merge collinear edges at the same position
+        return mergeEdges(edges);
+    }
+
+    function detectEdge(a, b, gutter, eps) {
+        var gap, os, oe, mid;
+        // a right -> b left (vertical edge)
+        gap = b.x - (a.x + a.width);
+        if (gap > -0.01 && gap < eps) {
+            os = Math.max(a.y, b.y); oe = Math.min(a.y + a.height, b.y + b.height);
+            if (oe - os > 0.01) {
+                mid = (a.x + a.width + b.x) / 2;
+                return { orientation: 'v', pos: mid, x1: mid, y1: os, x2: mid, y2: oe,
+                         cells: [{cell: a, side: 'right'}, {cell: b, side: 'left'}] };
+            }
+        }
+        // b right -> a left
+        gap = a.x - (b.x + b.width);
+        if (gap > -0.01 && gap < eps) {
+            os = Math.max(a.y, b.y); oe = Math.min(a.y + a.height, b.y + b.height);
+            if (oe - os > 0.01) {
+                mid = (b.x + b.width + a.x) / 2;
+                return { orientation: 'v', pos: mid, x1: mid, y1: os, x2: mid, y2: oe,
+                         cells: [{cell: b, side: 'right'}, {cell: a, side: 'left'}] };
+            }
+        }
+        // a bottom -> b top (horizontal edge)
+        gap = b.y - (a.y + a.height);
+        if (gap > -0.01 && gap < eps) {
+            os = Math.max(a.x, b.x); oe = Math.min(a.x + a.width, b.x + b.width);
+            if (oe - os > 0.01) {
+                mid = (a.y + a.height + b.y) / 2;
+                return { orientation: 'h', pos: mid, x1: os, y1: mid, x2: oe, y2: mid,
+                         cells: [{cell: a, side: 'bottom'}, {cell: b, side: 'top'}] };
+            }
+        }
+        // b bottom -> a top
+        gap = a.y - (b.y + b.height);
+        if (gap > -0.01 && gap < eps) {
+            os = Math.max(a.x, b.x); oe = Math.min(a.x + a.width, b.x + b.width);
+            if (oe - os > 0.01) {
+                mid = (b.y + b.height + a.y) / 2;
+                return { orientation: 'h', pos: mid, x1: os, y1: mid, x2: oe, y2: mid,
+                         cells: [{cell: b, side: 'bottom'}, {cell: a, side: 'top'}] };
+            }
+        }
+        return null;
+    }
+
+    function mergeEdges(edges) {
+        // Merge edges at the same position and orientation that share cell pairs
+        // For now, group by orientation+pos (rounded) and combine cell lists
+        var groups = {};
+        for (var i = 0; i < edges.length; i++) {
+            var e = edges[i];
+            var key = e.orientation + '_' + Math.round(e.pos * 1000);
+            if (!groups[key]) {
+                groups[key] = { orientation: e.orientation, pos: e.pos,
+                                x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2,
+                                cells: e.cells.slice(), cellIdSet: new Set() };
+            } else {
+                var g = groups[key];
+                // Extend the line span
+                if (e.orientation === 'v') {
+                    g.y1 = Math.min(g.y1, e.y1); g.y2 = Math.max(g.y2, e.y2);
+                } else {
+                    g.x1 = Math.min(g.x1, e.x1); g.x2 = Math.max(g.x2, e.x2);
+                }
+                // Add cells not already in this group
+                for (var c = 0; c < e.cells.length; c++) {
+                    if (!g.cellIdSet.has(e.cells[c].cell.id + '_' + e.cells[c].side)) {
+                        g.cells.push(e.cells[c]);
+                        g.cellIdSet.add(e.cells[c].cell.id + '_' + e.cells[c].side);
+                    }
+                }
+            }
+        }
+        return Object.values(groups).map(function(g) {
+            return { orientation: g.orientation, pos: g.pos,
+                     x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2, cells: g.cells };
+        });
+    }
+
+    // ========================================================================
+    // Image Manager
+    // ========================================================================
+    var THUMBNAIL_MAX = 2000;
+
+    class ImageManager {
+        constructor() { this.images = new Map(); }
+
+        async loadFiles(fileList) {
+            var self = this;
+            var promises = Array.from(fileList).map(async function(file) {
+                var id = 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                var fullBitmap = await createImageBitmap(file);
+                var nw = fullBitmap.width, nh = fullBitmap.height;
+                var thumbnail;
+                if (Math.max(nw, nh) > THUMBNAIL_MAX) {
+                    var sc = THUMBNAIL_MAX / Math.max(nw, nh);
+                    thumbnail = await createImageBitmap(file, {
+                        resizeWidth: Math.round(nw * sc), resizeHeight: Math.round(nh * sc),
+                        resizeQuality: 'medium' });
+                } else { thumbnail = fullBitmap; }
+
+                var fileName = file.name;
+                var fileMod = new Date(file.lastModified);
+                var exifDate = null, exifTime = null;
+                var exifStr = await extractExifDate(file);
+                if (exifStr) {
+                    var p = parseExifDateString(exifStr);
+                    if (p) { exifDate = p.date; exifTime = p.time; }
+                }
+                if (!exifDate) {
+                    exifDate = fileMod.toISOString().substring(0, 10);
+                    exifTime = fileMod.toTimeString().substring(0, 8);
+                }
+                self.images.set(id, { id: id, file: file, fullBitmap: fullBitmap, thumbnail: thumbnail,
+                    naturalWidth: nw, naturalHeight: nh,
+                    fileName: fileName, date: exifDate, time: exifTime,
+                    enabled: true });
+                return id;
+            });
+            return Promise.all(promises);
+        }
+
+        get(id) { return this.images.get(id); }
+        getIds() { return Array.from(this.images.keys()); }
+        getEnabledIds() {
+            var result = [];
+            this.images.forEach(function(img) { if (img.enabled) result.push(img.id); });
+            return result;
+        }
+        count() { return this.images.size; }
+        enabledCount() {
+            var n = 0;
+            this.images.forEach(function(img) { if (img.enabled) n++; });
+            return n;
+        }
+        setEnabled(id, enabled) {
+            var img = this.images.get(id);
+            if (img) img.enabled = enabled;
+        }
+        remove(id) {
+            var img = this.images.get(id);
+            if (img) {
+                img.fullBitmap.close();
+                if (img.thumbnail !== img.fullBitmap) img.thumbnail.close();
+                this.images.delete(id);
+            }
+        }
+        getAll() { return Array.from(this.images.values()); }
+    }
+
+    // ========================================================================
+    // Renderer
+    // ========================================================================
+    function renderCollage(ctx, collage, imgMgr, scale, selectedCellId, dragState, resizeMode, edges, hoveredEdgeIdx, draggedEdgeIdx) {
+        var w = collage.paperWidth * collage.dpi * scale;
+        var h = collage.paperHeight * collage.dpi * scale;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+
+        for (var i = 0; i < collage.cells.length; i++) {
+            var cell = collage.cells[i];
+            var isDragSrc = dragState && dragState.sourceCellId === cell.id;
+            var isDragTgt = dragState && dragState.targetCellId === cell.id;
+            renderCell(ctx, cell, collage.dpi, scale, imgMgr,
+                       cell.id === selectedCellId, isDragSrc, isDragTgt);
+        }
+
+        // Edge overlays in resize mode
+        if (resizeMode && edges) {
+            for (var i = 0; i < edges.length; i++) {
+                renderEdge(ctx, edges[i], collage.dpi, scale,
+                           i === hoveredEdgeIdx, i === draggedEdgeIdx);
+            }
+        }
+
+        // Drag ghost
+        if (dragState && dragState.active && dragState.ghostX !== undefined) {
+            renderDragGhost(ctx, dragState, imgMgr);
+        }
+    }
+
+    function renderCell(ctx, cell, dpi, scale, imgMgr, isSelected, isDragSrc, isDragTgt) {
+        var x = cell.x * dpi * scale, y = cell.y * dpi * scale;
+        var w = cell.width * dpi * scale, h = cell.height * dpi * scale;
+
+        ctx.save();
+        ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+
+        if (cell.imageId && imgMgr) {
+            var img = imgMgr.get(cell.imageId);
+            if (img) {
+                if (isDragSrc) ctx.globalAlpha = 0.3;
+                var bmp = scale < 0.5 ? img.thumbnail : img.fullBitmap;
+
+                // Draw the full bitmap at a computed position/size.
+                // The clip rect handles cropping — no source-rect math needed,
+                // which avoids out-of-bounds drawImage failures.
+                var imgScale = cell.imageScale * scale;
+                var imgW = img.naturalWidth * imgScale;
+                var imgH = img.naturalHeight * imgScale;
+                var imgX = x - cell.imageOffsetX * imgScale;
+                var imgY = y - cell.imageOffsetY * imgScale;
+
+                ctx.drawImage(bmp, imgX, imgY, imgW, imgH);
+                ctx.globalAlpha = 1.0;
+            }
+        } else {
+            ctx.fillStyle = '#e8e8e8'; ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = '#999';
+            ctx.font = Math.max(10, Math.min(16, w/8)) + 'px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('No Image', x + w/2, y + h/2);
+        }
+        ctx.restore();
+
+        if (isDragTgt) {
+            ctx.strokeStyle = '#4CAF50'; ctx.lineWidth = 4;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(x+2, y+2, w-4, h-4);
+            ctx.setLineDash([]);
+        } else if (isSelected) {
+            ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 3;
+            ctx.strokeRect(x+1.5, y+1.5, w-3, h-3);
+        }
+    }
+
+    function renderEdge(ctx, edge, dpi, scale, isHovered, isDragged) {
+        var x1 = edge.x1 * dpi * scale, y1 = edge.y1 * dpi * scale;
+        var x2 = edge.x2 * dpi * scale, y2 = edge.y2 * dpi * scale;
+
+        // Draw a thick visible handle bar along the edge
+        ctx.save();
+
+        if (isDragged) {
+            ctx.strokeStyle = '#FF5722';
+            ctx.lineWidth = 6;
+            ctx.globalAlpha = 0.9;
+        } else if (isHovered) {
+            ctx.strokeStyle = '#FF9800';
+            ctx.lineWidth = 5;
+            ctx.globalAlpha = 0.85;
+        } else {
+            ctx.strokeStyle = '#2196F3';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.7;
+        }
+
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        // Draw grab dots along the edge
+        var dots = 3;
+        var dotSize = isDragged ? 4 : (isHovered ? 3.5 : 2.5);
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.globalAlpha = 1.0;
+        for (var d = 0; d < dots; d++) {
+            var t = (d + 1) / (dots + 1);
+            var dx = x1 + (x2 - x1) * t;
+            var dy = y1 + (y2 - y1) * t;
+            ctx.beginPath();
+            ctx.arc(dx, dy, dotSize, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function renderDragGhost(ctx, ds, imgMgr) {
+        var img = imgMgr.get(ds.imageId);
+        if (!img) return;
+        var sz = 60;
+        ctx.save();
+        ctx.globalAlpha = 0.7;
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10;
+        ctx.drawImage(img.thumbnail, ds.ghostX - sz/2, ds.ghostY - sz/2, sz, sz);
+        ctx.restore();
+    }
+
+    // ========================================================================
+    // Interaction Manager
+    // ========================================================================
+    var EDGE_HIT_DIST = 10; // display pixels
+    var MIN_DRAG_CELL = 0.5;
+    var IMAGE_DRAG_THRESHOLD = 8;
+
+    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3;
+
+    class InteractionManager {
+        constructor(collage, imgMgr, onChange) {
+            this.collage = collage;
+            this.imgMgr = imgMgr;
+            this.onChange = onChange;
+            this.state = ST_IDLE;
+            this.selectedCellId = null;
+            this.resizeMode = false;
+
+            // Edge data
+            this.edges = [];
+            this.hoveredEdgeIdx = -1;
+            this.draggedEdgeIdx = -1;
+            this.dragEdgeOrigPos = 0;
+            this.dragStartCoord = 0;
+            this.originalCells = null;
+
+            // Pan
+            this.panStartX = 0; this.panStartY = 0;
+            this.panOrigOX = 0; this.panOrigOY = 0;
+
+            // Image drag
+            this.imageDragState = { active: false, sourceCellId: null, targetCellId: null, imageId: null, ghostX: 0, ghostY: 0 };
+            this.pendingImageDrag = false;
+            this.mouseDownX = 0; this.mouseDownY = 0;
+
+            this.displayScale = 1;
+            this.dpi = 300;
+        }
+
+        setDisplayInfo(ds, dpi) { this.displayScale = ds; this.dpi = dpi; }
+        d2i(px) { return px / (this.dpi * this.displayScale); }
+        i2d(inches) { return inches * this.dpi * this.displayScale; }
+
+        rebuildEdges() {
+            this.edges = findAllEdges(this.collage.cells, this.collage.gutterMargin);
+        }
+
+        toggleResizeMode() {
+            this.resizeMode = !this.resizeMode;
+            if (this.resizeMode) this.rebuildEdges();
+            this.hoveredEdgeIdx = -1;
+            this.draggedEdgeIdx = -1;
+            this.onChange();
+        }
+
+        // Find which edge the mouse is near (in display coords)
+        hitTestEdge(dx, dy) {
+            if (!this.resizeMode) return -1;
+            for (var i = 0; i < this.edges.length; i++) {
+                var e = this.edges[i];
+                if (e.orientation === 'v') {
+                    var ex = this.i2d(e.pos);
+                    var ey1 = this.i2d(e.y1), ey2 = this.i2d(e.y2);
+                    if (Math.abs(dx - ex) < EDGE_HIT_DIST && dy >= ey1 - 4 && dy <= ey2 + 4) return i;
+                } else {
+                    var ey = this.i2d(e.pos);
+                    var ex1 = this.i2d(e.x1), ex2 = this.i2d(e.x2);
+                    if (Math.abs(dy - ey) < EDGE_HIT_DIST && dx >= ex1 - 4 && dx <= ex2 + 4) return i;
+                }
+            }
+            return -1;
+        }
+
+        hitTestCell(dx, dy) {
+            var ix = this.d2i(dx), iy = this.d2i(dy);
+            for (var i = 0; i < this.collage.cells.length; i++) {
+                if (pointInRect(ix, iy, this.collage.cells[i])) return this.collage.cells[i];
+            }
+            return null;
+        }
+
+        onMouseDown(dx, dy, shiftKey) {
+            this.mouseDownX = dx; this.mouseDownY = dy;
+            this.pendingImageDrag = false;
+
+            // In resize mode, check edge hit first
+            if (this.resizeMode) {
+                var ei = this.hitTestEdge(dx, dy);
+                if (ei >= 0) {
+                    this.state = ST_DRAG_EDGE;
+                    this.draggedEdgeIdx = ei;
+                    var e = this.edges[ei];
+                    this.dragEdgeOrigPos = e.pos;
+                    this.dragStartCoord = e.orientation === 'v' ? this.d2i(dx) : this.d2i(dy);
+                    this.originalCells = this.collage.cells.map(function(c) {
+                        return { id: c.id, x: c.x, y: c.y, width: c.width, height: c.height };
+                    });
+                    this.onChange();
+                    return;
+                }
+            }
+
+            // Shift+drag for image swap
+            var cell = this.hitTestCell(dx, dy);
+            if (shiftKey && cell && cell.imageId) {
+                this.selectedCellId = cell.id;
+                this.pendingImageDrag = true;
+                this.onChange();
+                return;
+            }
+
+            // Normal click: select and immediately begin pan
+            if (cell) {
+                this.selectedCellId = cell.id;
+                if (cell.imageId && !this.resizeMode) {
+                    this.state = ST_PAN_IMAGE;
+                    this.panStartX = dx; this.panStartY = dy;
+                    this.panOrigOX = cell.imageOffsetX; this.panOrigOY = cell.imageOffsetY;
+                }
+                this.onChange();
+            } else {
+                this.selectedCellId = null;
+                this.onChange();
+            }
+        }
+
+        onMouseMove(dx, dy) {
+            // Pending image drag?
+            if (this.pendingImageDrag) {
+                if (Math.hypot(dx - this.mouseDownX, dy - this.mouseDownY) > IMAGE_DRAG_THRESHOLD) {
+                    var c = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                    if (c && c.imageId) {
+                        this.state = ST_DRAG_IMAGE;
+                        this.imageDragState.active = true;
+                        this.imageDragState.sourceCellId = c.id;
+                        this.imageDragState.imageId = c.imageId;
+                        this.imageDragState.targetCellId = null;
+                        this.pendingImageDrag = false;
+                    }
+                }
+            }
+
+            if (this.state === ST_DRAG_IMAGE) {
+                this.imageDragState.ghostX = dx; this.imageDragState.ghostY = dy;
+                var tgt = this.hitTestCell(dx, dy);
+                this.imageDragState.targetCellId = (tgt && tgt.id !== this.imageDragState.sourceCellId) ? tgt.id : null;
+                this.onChange();
+                return;
+            }
+
+            if (this.state === ST_DRAG_EDGE) {
+                this.applyEdgeDrag(dx, dy);
+                this.onChange();
+                return;
+            }
+
+            if (this.state === ST_PAN_IMAGE) {
+                var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                if (!cell || !cell.imageId) return;
+                var ddx = dx - this.panStartX, ddy = dy - this.panStartY;
+                var r = 1 / (cell.imageScale * this.displayScale);
+                cell.imageOffsetX = this.panOrigOX - ddx * r;
+                cell.imageOffsetY = this.panOrigOY - ddy * r;
+                this.clampOffset(cell);
+                this.onChange();
+                return;
+            }
+
+            // Hover detection for edges
+            if (this.resizeMode) {
+                var newH = this.hitTestEdge(dx, dy);
+                if (newH !== this.hoveredEdgeIdx) {
+                    this.hoveredEdgeIdx = newH;
+                    this.onChange();
+                }
+            }
+        }
+
+        onMouseUp(dx, dy) {
+            if (this.state === ST_DRAG_IMAGE) {
+                if (this.imageDragState.targetCellId !== null) {
+                    this.swapImages(this.imageDragState.sourceCellId, this.imageDragState.targetCellId);
+                }
+                this.imageDragState.active = false;
+                this.imageDragState.sourceCellId = null;
+                this.imageDragState.targetCellId = null;
+                this.imageDragState.imageId = null;
+            }
+
+            if (this.state === ST_DRAG_EDGE) {
+                this.refitAllImages();
+                this.rebuildEdges(); // edge positions changed
+                this.draggedEdgeIdx = -1;
+            }
+
+            this.state = ST_IDLE;
+            this.pendingImageDrag = false;
+            this.originalCells = null;
+            this.onChange();
+        }
+
+        applyEdgeDrag(dx, dy) {
+            var edge = this.edges[this.draggedEdgeIdx];
+            if (!edge) return;
+            var delta;
+            if (edge.orientation === 'v') {
+                delta = this.d2i(dx) - this.dragStartCoord;
+            } else {
+                delta = this.d2i(dy) - this.dragStartCoord;
+            }
+
+            // Restore originals
+            for (var i = 0; i < this.originalCells.length; i++) {
+                var orig = this.originalCells[i];
+                var cell = this.collage.cells.find(function(c) { return c.id === orig.id; });
+                if (cell) { cell.x = orig.x; cell.y = orig.y; cell.width = orig.width; cell.height = orig.height; }
+            }
+
+            // Clamp delta
+            for (var i = 0; i < edge.cells.length; i++) {
+                var ec = edge.cells[i];
+                var orig = this.originalCells.find(function(o) { return o.id === ec.cell.id; });
+                if (!orig) continue;
+                if (edge.orientation === 'v') {
+                    if (ec.side === 'right') delta = Math.max(delta, MIN_DRAG_CELL - orig.width);
+                    else delta = Math.min(delta, orig.width - MIN_DRAG_CELL);
+                } else {
+                    if (ec.side === 'bottom') delta = Math.max(delta, MIN_DRAG_CELL - orig.height);
+                    else delta = Math.min(delta, orig.height - MIN_DRAG_CELL);
+                }
+            }
+
+            // Apply
+            for (var i = 0; i < edge.cells.length; i++) {
+                var ec = edge.cells[i];
+                var orig = this.originalCells.find(function(o) { return o.id === ec.cell.id; });
+                if (!orig) continue;
+                if (edge.orientation === 'v') {
+                    if (ec.side === 'right') ec.cell.width = orig.width + delta;
+                    else { ec.cell.x = orig.x + delta; ec.cell.width = orig.width - delta; }
+                } else {
+                    if (ec.side === 'bottom') ec.cell.height = orig.height + delta;
+                    else { ec.cell.y = orig.y + delta; ec.cell.height = orig.height - delta; }
+                }
+            }
+        }
+
+        swapImages(idA, idB) {
+            var a = this.collage.cells.find(function(c) { return c.id === idA; });
+            var b = this.collage.cells.find(function(c) { return c.id === idB; });
+            if (!a || !b) return;
+            var tmp = a.imageId; a.imageId = b.imageId; b.imageId = tmp;
+            this.refitCell(a); this.refitCell(b);
+            this.selectedCellId = idB;
+        }
+
+        refitCell(cell) {
+            if (!cell.imageId) { cell.imageOffsetX = 0; cell.imageOffsetY = 0; cell.imageScale = 1; return; }
+            var img = this.imgMgr.get(cell.imageId);
+            if (!img) return;
+            var f = computeDefaultFit(cell, img.naturalWidth, img.naturalHeight, this.dpi);
+            cell.imageScale = f.imageScale; cell.imageOffsetX = f.imageOffsetX; cell.imageOffsetY = f.imageOffsetY;
+        }
+
+        refitAllImages() {
+            for (var i = 0; i < this.collage.cells.length; i++) {
+                var cell = this.collage.cells[i];
+                if (!cell.imageId) continue;
+                var img = this.imgMgr.get(cell.imageId);
+                if (!img) continue;
+                var cpw = cell.width * this.dpi, cph = cell.height * this.dpi;
+                var minSc = Math.max(cpw / img.naturalWidth, cph / img.naturalHeight);
+                if (cell.imageScale < minSc) cell.imageScale = minSc;
+                this.clampOffset(cell);
+            }
+        }
+
+        onWheel(dx, dy, deltaY) {
+            if (!this.selectedCellId) return;
+            var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+            if (!cell || !cell.imageId) return;
+            var img = this.imgMgr.get(cell.imageId);
+            if (!img) return;
+            var factor = deltaY > 0 ? 0.95 : 1.05;
+            var cpw = cell.width * this.dpi, cph = cell.height * this.dpi;
+            var minSc = Math.max(cpw / img.naturalWidth, cph / img.naturalHeight);
+            cell.imageScale = Math.max(cell.imageScale * factor, minSc);
+            this.clampOffset(cell);
+            this.onChange();
+        }
+
+        setZoomPercent(pct) {
+            if (!this.selectedCellId) return;
+            var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+            if (!cell || !cell.imageId) return;
+            var img = this.imgMgr.get(cell.imageId);
+            if (!img) return;
+            var cpw = cell.width * this.dpi, cph = cell.height * this.dpi;
+            var minSc = Math.max(cpw / img.naturalWidth, cph / img.naturalHeight);
+            cell.imageScale = Math.max(minSc * (pct / 100), minSc);
+            this.clampOffset(cell);
+            this.onChange();
+        }
+
+        getZoomPercent() {
+            if (!this.selectedCellId) return 100;
+            var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+            if (!cell || !cell.imageId) return 100;
+            var img = this.imgMgr.get(cell.imageId);
+            if (!img) return 100;
+            var cpw = cell.width * this.dpi, cph = cell.height * this.dpi;
+            var minSc = Math.max(cpw / img.naturalWidth, cph / img.naturalHeight);
+            return Math.round((cell.imageScale / minSc) * 100);
+        }
+
+        clampOffset(cell) {
+            if (!cell.imageId) return;
+            var img = this.imgMgr.get(cell.imageId);
+            if (!img) return;
+            var vw = cell.width * this.dpi / cell.imageScale;
+            var vh = cell.height * this.dpi / cell.imageScale;
+            cell.imageOffsetX = clamp(cell.imageOffsetX, 0, Math.max(0, img.naturalWidth - vw));
+            cell.imageOffsetY = clamp(cell.imageOffsetY, 0, Math.max(0, img.naturalHeight - vh));
+        }
+
+        getCursorStyle(dx, dy) {
+            if (this.state === ST_DRAG_EDGE) return this.edges[this.draggedEdgeIdx].orientation === 'v' ? 'col-resize' : 'row-resize';
+            if (this.state === ST_DRAG_IMAGE) return 'grabbing';
+            if (this.state === ST_PAN_IMAGE) return 'grabbing';
+
+            if (this.resizeMode) {
+                var ei = this.hitTestEdge(dx, dy);
+                if (ei >= 0) return this.edges[ei].orientation === 'v' ? 'col-resize' : 'row-resize';
+            }
+
+            var cell = this.hitTestCell(dx, dy);
+            if (cell) {
+                if (this.selectedCellId === cell.id && cell.imageId) return 'grab';
+                return 'pointer';
+            }
+            return 'default';
+        }
+    }
+
+    // ========================================================================
+    // Export
+    // ========================================================================
+    async function exportCollage(collage, imgMgr) {
+        var ow = Math.round(collage.paperWidth * collage.dpi);
+        var oh = Math.round(collage.paperHeight * collage.dpi);
+        var oc = new OffscreenCanvas(ow, oh);
+        var octx = oc.getContext('2d');
+        renderCollage(octx, collage, imgMgr, 1.0, null, null, false, null, -1, -1);
+        var blob = await oc.convertToBlob({ type: 'image/jpeg', quality: 1.0 });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'collage_' + collage.paperWidth + 'x' + collage.paperHeight + '_' + collage.dpi + 'dpi.jpg';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return { width: ow, height: oh, sizeMB: (blob.size / 1048576).toFixed(1) };
+    }
+
+    // ========================================================================
+    // App
+    // ========================================================================
+    var collage = null;
+    var imageManager = new ImageManager();
+    var interaction = null;
+    var canvas, ctx;
+    var displayScale = 1;
+    var dirty = true;
+
+    var fileInput, paperSelect, customDims, paperWidthInput, paperHeightInput;
+    var dpiInput, perimeterInput, gutterInput;
+    var generateBtn, randomizeBtn, exportBtn, resizeModeBtn;
+    var statusBar, cellInfo, scaleSlider, resetCropBtn, zoomInput;
+    var imagePropsSection, cropSection;
+    var propFilename, propDate, propTime, propResolution, propCellsize;
+    var modeBadge, modeHint;
+
+    function init() {
+        canvas = document.getElementById('collage-canvas');
+        ctx = canvas.getContext('2d');
+        fileInput = document.getElementById('file-input');
+        paperSelect = document.getElementById('paper-size');
+        customDims = document.getElementById('custom-dims');
+        paperWidthInput = document.getElementById('paper-width');
+        paperHeightInput = document.getElementById('paper-height');
+        dpiInput = document.getElementById('dpi');
+        perimeterInput = document.getElementById('perimeter-margin');
+        gutterInput = document.getElementById('gutter-margin');
+        generateBtn = document.getElementById('generate-btn');
+        randomizeBtn = document.getElementById('randomize-btn');
+        resizeModeBtn = document.getElementById('resize-mode-btn');
+        exportBtn = document.getElementById('export-btn');
+        statusBar = document.getElementById('status-bar');
+        cellInfo = document.getElementById('cell-info');
+        scaleSlider = document.getElementById('scale-slider');
+        zoomInput = document.getElementById('zoom-input');
+        resetCropBtn = document.getElementById('reset-crop-btn');
+        imagePropsSection = document.getElementById('image-props-section');
+        cropSection = document.getElementById('crop-section');
+        propFilename = document.getElementById('prop-filename');
+        propDate = document.getElementById('prop-date');
+        propTime = document.getElementById('prop-time');
+        propResolution = document.getElementById('prop-resolution');
+        propCellsize = document.getElementById('prop-cellsize');
+        modeBadge = document.getElementById('mode-badge');
+        modeHint = document.getElementById('mode-hint');
+
+        fileInput.addEventListener('change', onFilesSelected);
+        paperSelect.addEventListener('change', onPaperChange);
+        generateBtn.addEventListener('click', onGenerate);
+        randomizeBtn.addEventListener('click', onRandomize);
+        resizeModeBtn.addEventListener('click', onResizeModeToggle);
+        exportBtn.addEventListener('click', onExport);
+        scaleSlider.addEventListener('input', onScaleSlider);
+        zoomInput.addEventListener('change', onZoomInput);
+        zoomInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') onZoomInput(); });
+        resetCropBtn.addEventListener('click', onResetCrop);
+        document.getElementById('remove-photo-btn').addEventListener('click', onRemovePhoto);
+
+        // Sidebar file drop zone
+        var fileDropZone = document.getElementById('file-drop-zone');
+        fileDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = 'copy';
+            fileDropZone.classList.add('file-drop-active');
+        });
+        fileDropZone.addEventListener('dragenter', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropZone.classList.add('file-drop-active');
+        });
+        fileDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropZone.classList.remove('file-drop-active');
+        });
+        fileDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileDropZone.classList.remove('file-drop-active');
+            // Also dismiss the full-window overlay
+            document.getElementById('drop-overlay').classList.remove('visible');
+            var files = filterImageFiles(e.dataTransfer.files);
+            if (files.length > 0) loadDroppedFiles(files);
+        });
+        fileDropZone.addEventListener('click', function() {
+            // Open file picker on click too
+            var picker = document.createElement('input');
+            picker.type = 'file';
+            picker.multiple = true;
+            picker.accept = 'image/*';
+            picker.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    loadDroppedFiles(Array.from(e.target.files));
+                }
+            });
+            picker.click();
+        });
+
+        canvas.addEventListener('mousedown', onCanvasMouseDown);
+        canvas.addEventListener('mousemove', onCanvasMouseMove);
+        canvas.addEventListener('mouseup', onCanvasMouseUp);
+        canvas.addEventListener('mouseleave', onCanvasMouseUp);
+        canvas.addEventListener('dblclick', onCanvasDblClick);
+        canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+
+        new ResizeObserver(function() { dirty = true; }).observe(canvas.parentElement);
+        window.addEventListener('resize', function() { dirty = true; });
+
+        // Drag-drop support
+        var dropOverlay = document.getElementById('drop-overlay');
+        var dragCounter = 0;
+
+        document.addEventListener('dragenter', function(e) {
+            e.preventDefault();
+            dragCounter++;
+            if (hasImageFiles(e)) dropOverlay.classList.add('visible');
+        });
+        document.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('visible'); }
+        });
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dragCounter = 0;
+            dropOverlay.classList.remove('visible');
+            var files = filterImageFiles(e.dataTransfer.files);
+            if (files.length > 0) loadDroppedFiles(files);
+        });
+
+        onPaperChange();
+        updateDropPlaceholder();
+        updateStatus('Load photos or drop them here to begin.');
+        requestAnimationFrame(renderLoop);
+    }
+
+    function hasImageFiles(e) {
+        if (e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') >= 0) return true;
+        var items = e.dataTransfer.items;
+        if (!items) return false;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].kind === 'file' && items[i].type.match(/^image\//)) return true;
+        }
+        return false;
+    }
+
+    function filterImageFiles(fileList) {
+        var result = [];
+        for (var i = 0; i < fileList.length; i++) {
+            if (fileList[i].type.match(/^image\//)) result.push(fileList[i]);
+        }
+        return result;
+    }
+
+    async function loadDroppedFiles(files) {
+        updateStatus('Loading ' + files.length + ' photo(s)...');
+        try {
+            await imageManager.loadFiles(files);
+            updateStatus(imageManager.count() + ' photo(s) loaded. Click Generate Layout.');
+            generateBtn.disabled = false;
+            updateDropPlaceholder();
+            renderFileList();
+        } catch (err) {
+            updateStatus('Error loading photos: ' + err.message);
+            console.error(err);
+        }
+    }
+
+    function updateDropPlaceholder() {
+        var ph = document.getElementById('drop-placeholder');
+        ph.style.display = (imageManager.count() === 0 && !collage) ? '' : 'none';
+    }
+
+    function getPaperDimensions() {
+        var v = paperSelect.value;
+        if (v === 'custom') return [parseFloat(paperWidthInput.value) || 11, parseFloat(paperHeightInput.value) || 14];
+        var p = v.split('x'); return [parseFloat(p[0]), parseFloat(p[1])];
+    }
+
+    function onPaperChange() { customDims.style.display = paperSelect.value === 'custom' ? 'flex' : 'none'; }
+
+    async function onFilesSelected(e) {
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+        updateStatus('Loading ' + files.length + ' photo(s)...');
+        try {
+            await imageManager.loadFiles(files);
+            updateStatus(imageManager.count() + ' photo(s) loaded. Click Generate Layout.');
+            generateBtn.disabled = false;
+            updateDropPlaceholder();
+            renderFileList();
+        } catch (err) {
+            updateStatus('Error loading photos: ' + err.message);
+            console.error(err);
+        }
+    }
+
+    function onGenerate() {
+        if (imageManager.count() === 0) { updateStatus('Please load photos first.'); return; }
+        buildCollage();
+    }
+
+    function onRandomize() {
+        if (!collage || imageManager.count() === 0) return;
+        buildCollage();
+    }
+
+    function onResizeModeToggle() {
+        if (!interaction) return;
+        interaction.toggleResizeMode();
+        updateModeBadge();
+        updateResizeModeBtn();
+        updateStatus(interaction.resizeMode
+            ? 'RESIZE MODE: Drag blue edges to resize cells. Click button again to exit.'
+            : 'Normal mode.');
+    }
+
+    function updateResizeModeBtn() {
+        if (!interaction) return;
+        if (interaction.resizeMode) {
+            resizeModeBtn.textContent = 'Done Resizing';
+            resizeModeBtn.classList.add('active-toggle');
+        } else {
+            resizeModeBtn.textContent = 'Resize Cells';
+            resizeModeBtn.classList.remove('active-toggle');
+        }
+    }
+
+    function buildCollage() {
+        var d = getPaperDimensions(), pw = d[0], ph = d[1];
+        var dpi = parseInt(dpiInput.value) || 300;
+        var pm = parseFloat(perimeterInput.value) || 0.25;
+        var gm = parseFloat(gutterInput.value) || 0.125;
+        var n = imageManager.enabledCount();
+
+        if (n === 0) { updateStatus('No enabled photos. Check some in the list.'); return; }
+
+        collage = createCollage(pw, ph, dpi, pm, gm);
+        collage.cells = generateLayout(pw, ph, pm, gm, n);
+        assignImages();
+        interaction = new InteractionManager(collage, imageManager, function() { dirty = true; });
+        randomizeBtn.disabled = false;
+        resizeModeBtn.disabled = false;
+        exportBtn.disabled = false;
+        dirty = true;
+        updateModeBadge();
+        updateDropPlaceholder();
+        renderFileList();
+        updateStatus('Layout: ' + n + ' photos on ' + pw + '"x' + ph + '" at ' + dpi + ' DPI');
+    }
+
+    function assignImages() {
+        var ids = imageManager.getEnabledIds(), cells = collage.cells;
+        var ca = cells.map(function(c, i) { return { idx: i, a: c.width / c.height }; });
+        var ia = ids.map(function(id) { var im = imageManager.get(id); return { id: id, a: im.naturalWidth / im.naturalHeight }; });
+        ca.sort(function(a, b) { return a.a - b.a; });
+        ia.sort(function(a, b) { return a.a - b.a; });
+        for (var i = 0; i < cells.length && i < ia.length; i++) {
+            var cell = cells[ca[i].idx], imgId = ia[i].id;
+            var img = imageManager.get(imgId);
+            cell.imageId = imgId;
+            var f = computeDefaultFit(cell, img.naturalWidth, img.naturalHeight, collage.dpi);
+            cell.imageScale = f.imageScale; cell.imageOffsetX = f.imageOffsetX; cell.imageOffsetY = f.imageOffsetY;
+        }
+    }
+
+    // ========================================================================
+    // File list management
+    // ========================================================================
+    function renderFileList() {
+        var list = document.getElementById('file-list');
+        var countEl = document.getElementById('photo-count');
+        var all = imageManager.getAll();
+
+        if (all.length === 0) {
+            list.innerHTML = '<p class="hint">No photos loaded yet.</p>';
+            countEl.textContent = '';
+            return;
+        }
+
+        countEl.textContent = '(' + imageManager.enabledCount() + '/' + all.length + ')';
+        var html = '';
+        for (var i = 0; i < all.length; i++) {
+            var img = all[i];
+            var checkedAttr = img.enabled ? ' checked' : '';
+            var dimClass = img.enabled ? '' : ' file-item-disabled';
+            html += '<label class="file-item' + dimClass + '" data-id="' + img.id + '">' +
+                '<input type="checkbox" class="file-checkbox" data-img-id="' + img.id + '"' + checkedAttr + '>' +
+                '<canvas class="file-thumb" width="36" height="36" data-thumb-id="' + img.id + '"></canvas>' +
+                '<span class="file-name" title="' + img.fileName + '">' + img.fileName + '</span>' +
+                '</label>';
+        }
+        list.innerHTML = html;
+
+        // Draw thumbnails into the small canvases
+        for (var i = 0; i < all.length; i++) {
+            var img = all[i];
+            var thumbCanvas = list.querySelector('[data-thumb-id="' + img.id + '"]');
+            if (thumbCanvas) {
+                var tctx = thumbCanvas.getContext('2d');
+                var aspect = img.naturalWidth / img.naturalHeight;
+                var sw, sh, sx, sy;
+                if (aspect > 1) {
+                    sh = img.thumbnail.height; sw = sh; sx = (img.thumbnail.width - sw) / 2; sy = 0;
+                } else {
+                    sw = img.thumbnail.width; sh = sw; sy = (img.thumbnail.height - sh) / 2; sx = 0;
+                }
+                tctx.drawImage(img.thumbnail, sx, sy, sw, sh, 0, 0, 36, 36);
+            }
+        }
+
+        // Attach checkbox listeners
+        var checkboxes = list.querySelectorAll('.file-checkbox');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].addEventListener('change', onFileToggle);
+        }
+    }
+
+    function onFileToggle(e) {
+        var imgId = e.target.getAttribute('data-img-id');
+        var enabled = e.target.checked;
+        imageManager.setEnabled(imgId, enabled);
+        renderFileList();
+        updateStatus(imageManager.enabledCount() + ' of ' + imageManager.count() + ' photos enabled. Click Generate to update layout.');
+    }
+
+    function onRemovePhoto() {
+        if (!interaction || interaction.selectedCellId === null) return;
+        var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+        if (!cell || !cell.imageId) return;
+
+        var imgId = cell.imageId;
+        // Remove from cell
+        cell.imageId = null; cell.imageOffsetX = 0; cell.imageOffsetY = 0; cell.imageScale = 1;
+        // Remove from manager
+        imageManager.remove(imgId);
+        // Clear selection
+        interaction.selectedCellId = null;
+        dirty = true;
+        renderFileList();
+        updateCellInfo();
+        updateStatus('Photo removed. ' + imageManager.enabledCount() + ' photos remain. Click Generate to rebuild layout.');
+    }
+
+    async function onExport() {
+        if (!collage) return;
+        updateStatus('Exporting high-resolution JPEG...');
+        exportBtn.disabled = true;
+        try {
+            var info = await exportCollage(collage, imageManager);
+            updateStatus('Exported: ' + info.width + 'x' + info.height + 'px (' + info.sizeMB + ' MB)');
+        } catch (err) { updateStatus('Export error: ' + err.message); console.error(err); }
+        exportBtn.disabled = false;
+    }
+
+    function onScaleSlider() {
+        if (!interaction || interaction.selectedCellId === null) return;
+        var pct = 100 + (scaleSlider.value / 100) * 400;
+        interaction.setZoomPercent(pct);
+        zoomInput.value = Math.round(pct);
+        dirty = true;
+    }
+
+    function onZoomInput() {
+        if (!interaction || interaction.selectedCellId === null) return;
+        var pct = clamp(parseInt(zoomInput.value) || 100, 100, 500);
+        zoomInput.value = pct;
+        interaction.setZoomPercent(pct);
+        scaleSlider.value = Math.round(((pct - 100) / 400) * 100);
+        dirty = true;
+    }
+
+    function onResetCrop() {
+        if (!interaction || interaction.selectedCellId === null) return;
+        var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+        if (!cell || !cell.imageId) return;
+        var img = imageManager.get(cell.imageId);
+        if (!img) return;
+        var f = computeDefaultFit(cell, img.naturalWidth, img.naturalHeight, collage.dpi);
+        cell.imageScale = f.imageScale; cell.imageOffsetX = f.imageOffsetX; cell.imageOffsetY = f.imageOffsetY;
+        dirty = true; updateCellInfo();
+    }
+
+    function getCanvasCoords(e) {
+        var r = canvas.getBoundingClientRect();
+        return [e.clientX - r.left, e.clientY - r.top];
+    }
+
+    function onCanvasMouseDown(e) {
+        if (!interaction) return;
+        var c = getCanvasCoords(e);
+        interaction.onMouseDown(c[0], c[1], e.shiftKey);
+        updateCellInfo();
+    }
+
+    function onCanvasMouseMove(e) {
+        if (!interaction) return;
+        var c = getCanvasCoords(e);
+        interaction.onMouseMove(c[0], c[1]);
+        canvas.style.cursor = interaction.getCursorStyle(c[0], c[1]);
+        if (interaction.state === ST_IDLE) updateCellInfo();
+    }
+
+    function onCanvasMouseUp(e) {
+        if (!interaction) return;
+        var c = e ? getCanvasCoords(e) : [0, 0];
+        interaction.onMouseUp(c[0], c[1]);
+        updateCellInfo();
+    }
+
+    function onCanvasDblClick(e) {
+        if (!interaction) return;
+        // Only toggle resize mode when double-clicking on empty space (margin/gutter),
+        // not on a cell — otherwise it conflicts with click-to-pan
+        var c = getCanvasCoords(e);
+        var cell = interaction.hitTestCell(c[0], c[1]);
+        if (cell) return; // double-click on a cell does nothing special
+        interaction.toggleResizeMode();
+        updateModeBadge();
+        updateResizeModeBtn();
+        updateStatus(interaction.resizeMode
+            ? 'RESIZE MODE: Drag blue edges to resize cells. Double-click margin to exit.'
+            : 'Normal mode. Double-click margin to enter resize mode.');
+    }
+
+    function onCanvasWheel(e) {
+        if (!interaction) return;
+        e.preventDefault();
+        var c = getCanvasCoords(e);
+        interaction.onWheel(c[0], c[1], e.deltaY);
+        updateCellInfo();
+    }
+
+    function updateModeBadge() {
+        if (!interaction) return;
+        if (interaction.resizeMode) {
+            modeBadge.textContent = 'RESIZE MODE';
+            modeBadge.className = 'mode-badge mode-resize';
+            modeHint.textContent = 'Drag edges to resize. Double-click to exit.';
+        } else {
+            modeBadge.textContent = 'LAYOUT MODE';
+            modeBadge.className = 'mode-badge mode-normal';
+            modeHint.textContent = 'Double-click to enter resize mode';
+        }
+    }
+
+    function updateCellInfo() {
+        if (!interaction || interaction.selectedCellId === null) {
+            cellInfo.innerHTML = '<p class="hint">Click a cell to select it.</p>';
+            imagePropsSection.style.display = 'none';
+            cropSection.style.display = 'none';
+            return;
+        }
+        var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+        if (!cell) return;
+
+        var w = cell.width.toFixed(2), h = cell.height.toFixed(2);
+        cellInfo.innerHTML = '<p><strong>Cell ' + cell.id + '</strong>: ' + w + '" &times; ' + h + '"</p>' +
+            '<p class="hint">Drag to pan &middot; Scroll to zoom &middot; Shift+drag to swap</p>';
+
+        if (cell.imageId) {
+            var img = imageManager.get(cell.imageId);
+            imagePropsSection.style.display = '';
+            propFilename.textContent = img.fileName || '-';
+            propDate.textContent = img.date || '-';
+            propTime.textContent = img.time || '-';
+            propResolution.textContent = img.naturalWidth + ' x ' + img.naturalHeight + ' px';
+            propCellsize.textContent = w + '" x ' + h + '" (' +
+                Math.round(cell.width * collage.dpi) + ' x ' + Math.round(cell.height * collage.dpi) + ' px)';
+
+            cropSection.style.display = '';
+            var z = interaction.getZoomPercent();
+            zoomInput.value = z;
+            scaleSlider.value = Math.round(((z - 100) / 400) * 100);
+        } else {
+            imagePropsSection.style.display = 'none';
+            cropSection.style.display = 'none';
+        }
+    }
+
+    function renderLoop() {
+        if (dirty && collage) {
+            dirty = false;
+            resizeCanvas();
+            var ds = interaction ? interaction.imageDragState : null;
+            var rm = interaction ? interaction.resizeMode : false;
+            var edges = interaction ? interaction.edges : [];
+            var hei = interaction ? interaction.hoveredEdgeIdx : -1;
+            var dei = interaction ? interaction.draggedEdgeIdx : -1;
+            renderCollage(ctx, collage, imageManager, displayScale,
+                interaction ? interaction.selectedCellId : null,
+                ds, rm, edges, hei, dei);
+            if (interaction) interaction.setDisplayInfo(displayScale, collage.dpi);
+        }
+        requestAnimationFrame(renderLoop);
+    }
+
+    function resizeCanvas() {
+        var cont = canvas.parentElement;
+        var style = getComputedStyle(cont);
+        var padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+        var padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+        var cw = cont.clientWidth - padX;
+        var ch = cont.clientHeight - padY;
+        var dpr = window.devicePixelRatio || 1;
+        var ppw = collage.paperWidth * collage.dpi, pph = collage.paperHeight * collage.dpi;
+        displayScale = Math.min(cw / ppw, ch / pph);
+        var dw = ppw * displayScale, dh = pph * displayScale;
+        canvas.width = dw * dpr; canvas.height = dh * dpr;
+        canvas.style.width = dw + 'px'; canvas.style.height = dh + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function updateStatus(msg) { statusBar.textContent = msg; }
+
+    document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
