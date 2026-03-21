@@ -102,6 +102,37 @@
             </div>
         </div>
 
+        <div class="section" id="overlays-section" style="display:none;">
+            <h3>Overlays <span id="overlay-count" class="photo-count"></span></h3>
+            <div id="overlay-list" class="overlay-list"></div>
+            <p class="hint">Paste (<kbd>Ctrl+V</kbd>) to add overlay from clipboard</p>
+        </div>
+
+        <div class="section" id="overlay-props-section" style="display:none;">
+            <h3>Overlay Properties</h3>
+            <div class="ov-prop-row">
+                <label>Position</label>
+                <input type="number" id="ov-x" step="0.0625" min="0"> <span>x</span>
+                <input type="number" id="ov-y" step="0.0625" min="0">
+            </div>
+            <div class="ov-prop-row">
+                <label>Size</label>
+                <input type="number" id="ov-w" step="0.0625" min="0.25"> <span>x</span>
+                <input type="number" id="ov-h" step="0.0625" min="0.25">
+            </div>
+            <div class="ov-prop-row">
+                <label>Mode</label>
+                <select id="ov-mode">
+                    <option value="transparent">Transparent</option>
+                    <option value="filled">Filled</option>
+                </select>
+                <input type="color" id="ov-fill" value="#ffffff">
+            </div>
+            <div style="margin-top: 8px;">
+                <button id="delete-overlay-btn" class="btn-danger">Delete Overlay</button>
+            </div>
+        </div>
+
         <div class="section" id="mode-indicator">
             <div id="mode-badge" class="mode-badge mode-normal">LAYOUT MODE</div>
             <p class="hint" id="mode-hint">Double-click margin to enter resize mode</p>
@@ -115,8 +146,9 @@
             <p>4. Click <kbd>Resize Cells</kbd> or double-click margin</p>
             <p>5. In resize mode, drag any edge to resize</p>
             <p>6. <kbd>Shift</kbd>+drag to swap images between cells</p>
-            <p>7. Uncheck photos in list to exclude from layout</p>
-            <p>8. Click <kbd>Export JPEG</kbd> to save</p>
+            <p>7. Drop a photo on a cell to replace it</p>
+            <p>8. <kbd>Ctrl+V</kbd> to paste overlay from clipboard</p>
+            <p>9. Click <kbd>Export JPEG</kbd> to save</p>
         </div>
     </div>
 
@@ -229,6 +261,24 @@
         return { imageScale: sc,
                  imageOffsetX: (natW * sc - cpw) / 2 / sc,
                  imageOffsetY: (natH * sc - cph) / 2 / sc };
+    }
+
+    // ========================================================================
+    // Overlay Model
+    // ========================================================================
+    var nextOverlayId = 0;
+    var overlays = [];
+    var selectedOverlayId = null;
+    var dropTargetCellId = null;
+
+    function createOverlay(imageId, x, y, w, h) {
+        return {
+            id: nextOverlayId++,
+            imageId: imageId,
+            x: x, y: y, width: w, height: h,
+            mode: 'transparent',  // 'transparent' | 'filled'
+            fillColor: '#ffffff'
+        };
     }
 
     // ========================================================================
@@ -440,7 +490,7 @@
     // ========================================================================
     // Renderer
     // ========================================================================
-    function renderCollage(ctx, collage, imgMgr, scale, selectedCellId, dragState, resizeMode, edges, hoveredEdgeIdx, draggedEdgeIdx) {
+    function renderCollage(ctx, collage, imgMgr, scale, selectedCellId, dragState, resizeMode, edges, hoveredEdgeIdx, draggedEdgeIdx, dropCellId, selOvId) {
         var w = collage.paperWidth * collage.dpi * scale;
         var h = collage.paperHeight * collage.dpi * scale;
         ctx.fillStyle = '#ffffff';
@@ -449,7 +499,7 @@
         for (var i = 0; i < collage.cells.length; i++) {
             var cell = collage.cells[i];
             var isDragSrc = dragState && dragState.sourceCellId === cell.id;
-            var isDragTgt = dragState && dragState.targetCellId === cell.id;
+            var isDragTgt = (dragState && dragState.targetCellId === cell.id) || (cell.id === dropCellId);
             renderCell(ctx, cell, collage.dpi, scale, imgMgr,
                        cell.id === selectedCellId, isDragSrc, isDragTgt);
         }
@@ -462,9 +512,63 @@
             }
         }
 
+        // Overlays — draw in reverse order (last in list = drawn first/bottom)
+        renderOverlays(ctx, collage.dpi, scale, imgMgr, selOvId);
+
         // Drag ghost
         if (dragState && dragState.active && dragState.ghostX !== undefined) {
             renderDragGhost(ctx, dragState, imgMgr);
+        }
+    }
+
+    function renderOverlays(ctx, dpi, scale, imgMgr, selOvId) {
+        for (var i = overlays.length - 1; i >= 0; i--) {
+            var ov = overlays[i];
+            var ox = ov.x * dpi * scale, oy = ov.y * dpi * scale;
+            var ow = ov.width * dpi * scale, oh = ov.height * dpi * scale;
+
+            ctx.save();
+
+            // Fill background if mode is filled
+            if (ov.mode === 'filled') {
+                ctx.fillStyle = ov.fillColor;
+                ctx.fillRect(ox, oy, ow, oh);
+            }
+
+            // Draw image clipped to overlay rect
+            var img = imgMgr ? imgMgr.get(ov.imageId) : null;
+            if (img) {
+                ctx.beginPath(); ctx.rect(ox, oy, ow, oh); ctx.clip();
+                // Cover-fit the image
+                var isc = Math.max(ow / img.naturalWidth, oh / img.naturalHeight);
+                var iw = img.naturalWidth * isc, ih = img.naturalHeight * isc;
+                var ix = ox + (ow - iw) / 2, iy = oy + (oh - ih) / 2;
+                var bmp = scale < 0.5 ? img.thumbnail : img.fullBitmap;
+                ctx.drawImage(bmp, ix, iy, iw, ih);
+            }
+
+            ctx.restore();
+
+            // Dotted outline
+            var isSel = (ov.id === selOvId);
+            ctx.setLineDash([4 * Math.max(1, scale * dpi / 72), 4 * Math.max(1, scale * dpi / 72)]);
+            ctx.strokeStyle = isSel ? '#2196F3' : 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = isSel ? 2.5 : 1.5;
+            ctx.strokeRect(ox, oy, ow, oh);
+            ctx.setLineDash([]);
+
+            // Resize handles for selected overlay
+            if (isSel) {
+                var hs = 5;
+                ctx.fillStyle = '#2196F3';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                var corners = [[ox,oy],[ox+ow,oy],[ox,oy+oh],[ox+ow,oy+oh]];
+                for (var ci = 0; ci < corners.length; ci++) {
+                    ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                    ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                }
+            }
         }
     }
 
@@ -575,7 +679,7 @@
     var MIN_DRAG_CELL = 0.5;
     var IMAGE_DRAG_THRESHOLD = 8;
 
-    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3;
+    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3, ST_DRAG_OVERLAY = 4, ST_RESIZE_OVERLAY = 5;
 
     class InteractionManager {
         constructor(collage, imgMgr, onChange) {
@@ -605,11 +709,44 @@
 
             this.displayScale = 1;
             this.dpi = 300;
+
+            // Overlay drag state
+            this.dragOvId = null;
+            this.dragOvOffX = 0; this.dragOvOffY = 0;
+            this.resizeOvHandle = null;
+            this.resizeOvOrig = null;
         }
 
         setDisplayInfo(ds, dpi) { this.displayScale = ds; this.dpi = dpi; }
         d2i(px) { return px / (this.dpi * this.displayScale); }
         i2d(inches) { return inches * this.dpi * this.displayScale; }
+
+        // Overlay hit-testing (forward order = first in array = drawn on top)
+        hitTestOverlay(dx, dy) {
+            var ix = this.d2i(dx), iy = this.d2i(dy);
+            for (var i = 0; i < overlays.length; i++) {
+                if (pointInRect(ix, iy, overlays[i])) return overlays[i];
+            }
+            return null;
+        }
+
+        hitTestOverlayHandle(dx, dy) {
+            if (selectedOverlayId === null) return null;
+            var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+            if (!ov) return null;
+            var hs = 8; // hit size in display px
+            var corners = [
+                { name: 'nw', x: ov.x, y: ov.y },
+                { name: 'ne', x: ov.x + ov.width, y: ov.y },
+                { name: 'sw', x: ov.x, y: ov.y + ov.height },
+                { name: 'se', x: ov.x + ov.width, y: ov.y + ov.height }
+            ];
+            for (var i = 0; i < corners.length; i++) {
+                var cx = this.i2d(corners[i].x), cy = this.i2d(corners[i].y);
+                if (Math.abs(dx - cx) < hs && Math.abs(dy - cy) < hs) return corners[i].name;
+            }
+            return null;
+        }
 
         rebuildEdges() {
             this.edges = findAllEdges(this.collage.cells, this.collage.gutterMargin);
@@ -653,6 +790,38 @@
             this.mouseDownX = dx; this.mouseDownY = dy;
             this.pendingImageDrag = false;
 
+            // Check overlay resize handles first (highest priority)
+            if (!this.resizeMode) {
+                var handle = this.hitTestOverlayHandle(dx, dy);
+                if (handle) {
+                    var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+                    if (ov) {
+                        this.state = ST_RESIZE_OVERLAY;
+                        this.resizeOvHandle = handle;
+                        this.resizeOvOrig = { x: ov.x, y: ov.y, width: ov.width, height: ov.height, mx: this.d2i(dx), my: this.d2i(dy) };
+                        this.selectedCellId = null;
+                        this.onChange();
+                        return;
+                    }
+                }
+
+                // Check overlay body hit
+                var hitOv = this.hitTestOverlay(dx, dy);
+                if (hitOv) {
+                    selectedOverlayId = hitOv.id;
+                    this.selectedCellId = null;
+                    this.state = ST_DRAG_OVERLAY;
+                    this.dragOvId = hitOv.id;
+                    this.dragOvOffX = this.d2i(dx) - hitOv.x;
+                    this.dragOvOffY = this.d2i(dy) - hitOv.y;
+                    this.onChange();
+                    return;
+                }
+            }
+
+            // Clicking on non-overlay area clears overlay selection
+            selectedOverlayId = null;
+
             // In resize mode, check edge hit first
             if (this.resizeMode) {
                 var ei = this.hitTestEdge(dx, dy);
@@ -695,6 +864,49 @@
         }
 
         onMouseMove(dx, dy) {
+            if (this.state === ST_DRAG_OVERLAY) {
+                var ov = overlays.find(function(o) { return o.id === this.dragOvId; }.bind(this));
+                if (ov) {
+                    ov.x = Math.max(0, this.d2i(dx) - this.dragOvOffX);
+                    ov.y = Math.max(0, this.d2i(dy) - this.dragOvOffY);
+                    this.onChange();
+                }
+                return;
+            }
+
+            if (this.state === ST_RESIZE_OVERLAY) {
+                var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+                if (ov && this.resizeOvOrig) {
+                    var ix = this.d2i(dx), iy = this.d2i(dy);
+                    var o = this.resizeOvOrig;
+                    var MIN_OV = 0.25;
+                    var h = this.resizeOvHandle;
+                    if (h === 'se') {
+                        ov.width = Math.max(MIN_OV, ix - o.x);
+                        ov.height = Math.max(MIN_OV, iy - o.y);
+                    } else if (h === 'sw') {
+                        var newX = Math.min(ix, o.x + o.width - MIN_OV);
+                        ov.width = o.x + o.width - newX;
+                        ov.x = newX;
+                        ov.height = Math.max(MIN_OV, iy - o.y);
+                    } else if (h === 'ne') {
+                        ov.width = Math.max(MIN_OV, ix - o.x);
+                        var newY = Math.min(iy, o.y + o.height - MIN_OV);
+                        ov.height = o.y + o.height - newY;
+                        ov.y = newY;
+                    } else if (h === 'nw') {
+                        var newX = Math.min(ix, o.x + o.width - MIN_OV);
+                        var newY = Math.min(iy, o.y + o.height - MIN_OV);
+                        ov.width = o.x + o.width - newX;
+                        ov.height = o.y + o.height - newY;
+                        ov.x = newX;
+                        ov.y = newY;
+                    }
+                    this.onChange();
+                }
+                return;
+            }
+
             // Pending image drag?
             if (this.pendingImageDrag) {
                 if (Math.hypot(dx - this.mouseDownX, dy - this.mouseDownY) > IMAGE_DRAG_THRESHOLD) {
@@ -747,6 +959,15 @@
         }
 
         onMouseUp(dx, dy) {
+            if (this.state === ST_DRAG_OVERLAY || this.state === ST_RESIZE_OVERLAY) {
+                this.state = ST_IDLE;
+                this.dragOvId = null;
+                this.resizeOvHandle = null;
+                this.resizeOvOrig = null;
+                this.onChange();
+                return;
+            }
+
             if (this.state === ST_DRAG_IMAGE) {
                 if (this.imageDragState.targetCellId !== null) {
                     this.swapImages(this.imageDragState.sourceCellId, this.imageDragState.targetCellId);
@@ -894,9 +1115,19 @@
         }
 
         getCursorStyle(dx, dy) {
+            if (this.state === ST_DRAG_OVERLAY) return 'move';
+            if (this.state === ST_RESIZE_OVERLAY) return this.resizeOvHandle === 'nw' || this.resizeOvHandle === 'se' ? 'nwse-resize' : 'nesw-resize';
             if (this.state === ST_DRAG_EDGE) return this.edges[this.draggedEdgeIdx].orientation === 'v' ? 'col-resize' : 'row-resize';
             if (this.state === ST_DRAG_IMAGE) return 'grabbing';
             if (this.state === ST_PAN_IMAGE) return 'grabbing';
+
+            // Check overlay handles/body
+            if (!this.resizeMode) {
+                var handle = this.hitTestOverlayHandle(dx, dy);
+                if (handle) return (handle === 'nw' || handle === 'se') ? 'nwse-resize' : 'nesw-resize';
+                var hitOv = this.hitTestOverlay(dx, dy);
+                if (hitOv) return 'move';
+            }
 
             if (this.resizeMode) {
                 var ei = this.hitTestEdge(dx, dy);
@@ -920,7 +1151,7 @@
         var oh = Math.round(collage.paperHeight * collage.dpi);
         var oc = new OffscreenCanvas(ow, oh);
         var octx = oc.getContext('2d');
-        renderCollage(octx, collage, imgMgr, 1.0, null, null, false, null, -1, -1);
+        renderCollage(octx, collage, imgMgr, 1.0, null, null, false, null, -1, -1, null, null);
         var blob = await oc.convertToBlob({ type: 'image/jpeg', quality: 1.0 });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
@@ -1032,12 +1263,38 @@
             picker.click();
         });
 
+        // Canvas drop-to-replace (must be before document-level drop handlers)
+        canvas.addEventListener('dragover', onCanvasDragOver);
+        canvas.addEventListener('dragleave', onCanvasDragLeave);
+        canvas.addEventListener('drop', onCanvasDrop);
+
         canvas.addEventListener('mousedown', onCanvasMouseDown);
         canvas.addEventListener('mousemove', onCanvasMouseMove);
         canvas.addEventListener('mouseup', onCanvasMouseUp);
         canvas.addEventListener('mouseleave', onCanvasMouseUp);
         canvas.addEventListener('dblclick', onCanvasDblClick);
         canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+
+        // Clipboard paste for overlays
+        document.addEventListener('paste', onPaste);
+
+        // Overlay property inputs
+        ['ov-x','ov-y','ov-w','ov-h'].forEach(function(id) {
+            document.getElementById(id).addEventListener('change', onOverlayPropChange);
+        });
+        document.getElementById('ov-mode').addEventListener('change', onOverlayPropChange);
+        document.getElementById('ov-fill').addEventListener('input', onOverlayPropChange);
+        document.getElementById('delete-overlay-btn').addEventListener('click', onDeleteOverlay);
+
+        // Delete key for overlays
+        document.addEventListener('keydown', function(e) {
+            if (selectedOverlayId !== null && (e.key === 'Delete' || e.key === 'Backspace')) {
+                var ae = document.activeElement;
+                if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+                e.preventDefault();
+                onDeleteOverlay();
+            }
+        });
 
         new ResizeObserver(function() { dirty = true; }).observe(canvas.parentElement);
         window.addEventListener('resize', function() { dirty = true; });
@@ -1186,6 +1443,7 @@
         updateModeBadge();
         updateDropPlaceholder();
         renderFileList();
+        renderOverlayList();
         updateStatus('Layout: ' + n + ' photos on ' + pw + '"x' + ph + '" at ' + dpi + ' DPI');
     }
 
@@ -1280,6 +1538,206 @@
         renderFileList();
         updateCellInfo();
         updateStatus('Photo removed. ' + imageManager.enabledCount() + ' photos remain. Click Generate to rebuild layout.');
+    }
+
+    // ========================================================================
+    // Drop-to-replace on canvas
+    // ========================================================================
+    function onCanvasDragOver(e) {
+        if (!interaction || !collage) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        var c = getCanvasCoords(e);
+        var cell = interaction.hitTestCell(c[0], c[1]);
+        var newTarget = (cell && cell.imageId) ? cell.id : null;
+        if (newTarget !== dropTargetCellId) {
+            dropTargetCellId = newTarget;
+            dirty = true;
+        }
+    }
+
+    function onCanvasDragLeave(e) {
+        e.stopPropagation();
+        if (dropTargetCellId !== null) {
+            dropTargetCellId = null;
+            dirty = true;
+        }
+    }
+
+    async function onCanvasDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.getElementById('drop-overlay').classList.remove('visible');
+        var targetId = dropTargetCellId;
+        dropTargetCellId = null;
+        dirty = true;
+
+        var files = filterImageFiles(e.dataTransfer.files);
+        if (files.length === 0) return;
+
+        if (targetId !== null && collage) {
+            var cell = collage.cells.find(function(c) { return c.id === targetId; });
+            if (cell && cell.imageId) {
+                if (confirm('Replace this photo?')) {
+                    var ids = await imageManager.loadFiles([files[0]]);
+                    var newId = ids[0];
+                    cell.imageId = newId;
+                    interaction.refitCell(cell);
+                    dirty = true;
+                    renderFileList();
+                    updateCellInfo();
+                    updateStatus('Photo replaced.');
+                    return;
+                }
+            }
+        }
+        // Fall through: add to pool
+        loadDroppedFiles(files);
+    }
+
+    // ========================================================================
+    // Clipboard paste -> overlay
+    // ========================================================================
+    async function onPaste(e) {
+        if (!collage) return;
+        // Don't intercept paste when an input is focused
+        var ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+
+        var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].type.match(/^image\//)) {
+                e.preventDefault();
+                var file = items[i].getAsFile();
+                var ids = await imageManager.loadFiles([file]);
+                var imgId = ids[0];
+                var img = imageManager.get(imgId);
+                // Default: 2 inches wide, aspect-preserved, centered on paper
+                var defW = 2.0;
+                var defH = defW * (img.naturalHeight / img.naturalWidth);
+                var ox = (collage.paperWidth - defW) / 2;
+                var oy = (collage.paperHeight - defH) / 2;
+                var ov = createOverlay(imgId, ox, oy, defW, defH);
+                overlays.push(ov);
+                selectedOverlayId = ov.id;
+                if (interaction) interaction.selectedCellId = null;
+                dirty = true;
+                renderFileList();
+                renderOverlayList();
+                updateOverlayProps();
+                updateCellInfo();
+                document.getElementById('overlays-section').style.display = '';
+                updateStatus('Overlay added from clipboard. Drag to position.');
+                break;
+            }
+        }
+    }
+
+    // ========================================================================
+    // Overlay list and properties UI
+    // ========================================================================
+    function renderOverlayList() {
+        var list = document.getElementById('overlay-list');
+        var countEl = document.getElementById('overlay-count');
+        var section = document.getElementById('overlays-section');
+
+        if (!collage) { section.style.display = 'none'; return; }
+        section.style.display = '';
+
+        countEl.textContent = overlays.length > 0 ? '(' + overlays.length + ')' : '';
+
+        if (overlays.length === 0) {
+            list.innerHTML = '';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < overlays.length; i++) {
+            var ov = overlays[i];
+            var img = imageManager.get(ov.imageId);
+            var name = img ? img.fileName : 'Overlay ' + ov.id;
+            var selClass = (ov.id === selectedOverlayId) ? ' ov-selected' : '';
+            html += '<div class="overlay-item' + selClass + '" data-ov-id="' + ov.id + '">' +
+                '<button class="ov-reorder-btn" data-ov-dir="up" data-ov-idx="' + i + '" title="Move up (draw on top)">&#9650;</button>' +
+                '<button class="ov-reorder-btn" data-ov-dir="down" data-ov-idx="' + i + '" title="Move down (draw behind)">&#9660;</button>' +
+                '<span class="ov-label" title="' + name + '">' + name + '</span>' +
+                '</div>';
+        }
+        list.innerHTML = html;
+
+        // Click to select
+        var items = list.querySelectorAll('.overlay-item');
+        for (var i = 0; i < items.length; i++) {
+            items[i].addEventListener('click', function(e) {
+                if (e.target.classList.contains('ov-reorder-btn')) return;
+                var ovId = parseInt(this.getAttribute('data-ov-id'));
+                selectedOverlayId = ovId;
+                if (interaction) interaction.selectedCellId = null;
+                dirty = true;
+                renderOverlayList();
+                updateOverlayProps();
+                updateCellInfo();
+            });
+        }
+
+        // Reorder buttons
+        var btns = list.querySelectorAll('.ov-reorder-btn');
+        for (var i = 0; i < btns.length; i++) {
+            btns[i].addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(this.getAttribute('data-ov-idx'));
+                var dir = this.getAttribute('data-ov-dir');
+                if (dir === 'up' && idx > 0) {
+                    var tmp = overlays[idx]; overlays[idx] = overlays[idx-1]; overlays[idx-1] = tmp;
+                } else if (dir === 'down' && idx < overlays.length - 1) {
+                    var tmp = overlays[idx]; overlays[idx] = overlays[idx+1]; overlays[idx+1] = tmp;
+                }
+                dirty = true;
+                renderOverlayList();
+            });
+        }
+    }
+
+    function updateOverlayProps() {
+        var section = document.getElementById('overlay-props-section');
+        if (selectedOverlayId === null) { section.style.display = 'none'; return; }
+        var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+        if (!ov) { section.style.display = 'none'; return; }
+
+        section.style.display = '';
+        document.getElementById('ov-x').value = ov.x.toFixed(3);
+        document.getElementById('ov-y').value = ov.y.toFixed(3);
+        document.getElementById('ov-w').value = ov.width.toFixed(3);
+        document.getElementById('ov-h').value = ov.height.toFixed(3);
+        document.getElementById('ov-mode').value = ov.mode;
+        document.getElementById('ov-fill').value = ov.fillColor;
+        // Show/hide color picker based on mode
+        document.getElementById('ov-fill').style.display = ov.mode === 'filled' ? '' : 'none';
+    }
+
+    function onOverlayPropChange() {
+        if (selectedOverlayId === null) return;
+        var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+        if (!ov) return;
+        ov.x = parseFloat(document.getElementById('ov-x').value) || 0;
+        ov.y = parseFloat(document.getElementById('ov-y').value) || 0;
+        ov.width = Math.max(0.25, parseFloat(document.getElementById('ov-w').value) || 0.25);
+        ov.height = Math.max(0.25, parseFloat(document.getElementById('ov-h').value) || 0.25);
+        ov.mode = document.getElementById('ov-mode').value;
+        ov.fillColor = document.getElementById('ov-fill').value;
+        document.getElementById('ov-fill').style.display = ov.mode === 'filled' ? '' : 'none';
+        dirty = true;
+    }
+
+    function onDeleteOverlay() {
+        if (selectedOverlayId === null) return;
+        overlays = overlays.filter(function(o) { return o.id !== selectedOverlayId; });
+        selectedOverlayId = null;
+        dirty = true;
+        renderOverlayList();
+        updateOverlayProps();
+        updateStatus('Overlay deleted.');
     }
 
     async function onExport() {
@@ -1385,6 +1843,10 @@
     }
 
     function updateCellInfo() {
+        // Also update overlay UI
+        updateOverlayProps();
+        renderOverlayList();
+
         if (!interaction || interaction.selectedCellId === null) {
             cellInfo.innerHTML = '<p class="hint">Click a cell to select it.</p>';
             imagePropsSection.style.display = 'none';
@@ -1429,7 +1891,7 @@
             var dei = interaction ? interaction.draggedEdgeIdx : -1;
             renderCollage(ctx, collage, imageManager, displayScale,
                 interaction ? interaction.selectedCellId : null,
-                ds, rm, edges, hei, dei);
+                ds, rm, edges, hei, dei, dropTargetCellId, selectedOverlayId);
             if (interaction) interaction.setDisplayInfo(displayScale, collage.dpi);
         }
         requestAnimationFrame(renderLoop);

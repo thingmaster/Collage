@@ -509,3 +509,111 @@ body {
     0%, 100% { box-shadow: 0 0 4px rgba(233, 69, 96, 0.4); }
     50% { box-shadow: 0 0 12px rgba(233, 69, 96, 0.8); }
 }
+
+/* Overlay list */
+.overlay-list {
+    max-height: 150px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.overlay-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    color: #e0e0e0;
+    transition: background 0.15s;
+}
+
+.overlay-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.overlay-item.ov-selected {
+    background: rgba(33, 150, 243, 0.2);
+    border: 1px solid rgba(33, 150, 243, 0.4);
+}
+
+.overlay-item .ov-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ov-reorder-btn {
+    background: none !important;
+    border: none !important;
+    color: #a0a0c0;
+    cursor: pointer;
+    padding: 0 2px !important;
+    font-size: 12px;
+    width: auto !important;
+    min-width: 0 !important;
+    line-height: 1;
+}
+
+.ov-reorder-btn:hover {
+    color: #e0e0e0 !important;
+    background: none !important;
+}
+
+/* Overlay properties */
+.ov-prop-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.ov-prop-row label {
+    color: #a0a0c0;
+    min-width: 50px;
+    font-size: 11px;
+}
+
+.ov-prop-row input[type="number"] {
+    background: #0f3460;
+    border: 1px solid #1a1a4e;
+    color: #e0e0e0;
+    padding: 3px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+    width: 55px;
+}
+
+.ov-prop-row select {
+    background: #0f3460;
+    border: 1px solid #1a1a4e;
+    color: #e0e0e0;
+    padding: 3px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.ov-prop-row input[type="color"] {
+    width: 28px;
+    height: 24px;
+    border: 1px solid #1a1a4e;
+    border-radius: 3px;
+    padding: 1px;
+    cursor: pointer;
+    background: #0f3460;
+}
+
+.ov-prop-row span {
+    color: #666;
+    font-size: 11px;
+}
+
+/* Canvas drop-replace highlight */
+.canvas-drop-highlight {
+    box-shadow: 0 0 0 4px #4CAF50, 0 4px 24px rgba(0,0,0,0.5) !important;
+}
