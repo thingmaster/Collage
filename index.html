@@ -11,53 +11,112 @@
     <div class="toolbar">
         <label class="file-label" for="file-input">Load Photos</label>
         <input type="file" id="file-input" multiple accept="image/*">
-
         <div class="separator"></div>
-
-        <label>
-            Paper
-            <select id="paper-size">
-                <option value="11x14">11" &times; 14"</option>
-                <option value="11x17">11" &times; 17"</option>
-                <option value="8.5x11">8.5" &times; 11"</option>
-                <option value="13x19">13" &times; 19"</option>
-                <option value="custom">Custom...</option>
-            </select>
-        </label>
-
-        <div id="custom-dims">
-            <label>W <input type="number" id="paper-width" value="11" min="1" max="60" step="0.5"></label>
-            <span>&times;</span>
-            <label>H <input type="number" id="paper-height" value="14" min="1" max="60" step="0.5"></label>
-        </div>
-
-        <label>
-            DPI
-            <input type="number" id="dpi" value="300" min="72" max="600" step="1">
-        </label>
-
-        <div class="separator"></div>
-
-        <label>
-            Border
-            <input type="number" id="perimeter-margin" value="0.25" min="0" max="3" step="0.0625">
-        </label>
-
-        <label>
-            Gap
-            <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
-        </label>
-
-        <div class="separator"></div>
-
-        <button id="generate-btn" class="primary" disabled>Generate Layout</button>
+        <button id="generate-btn" class="primary" disabled>Generate</button>
         <button id="randomize-btn" disabled>Randomize</button>
+        <button id="refresh-btn" disabled>Refresh</button>
         <button id="resize-mode-btn" disabled>Resize Cells</button>
-        <button id="export-btn" disabled>Export JPEG</button>
+        <div class="separator"></div>
+        <label style="font-size:12px;color:#a0a0c0;display:flex;align-items:center;gap:4px;">
+            Scale
+            <input type="range" id="layout-scale" min="25" max="100" value="100" style="width:70px;accent-color:#e94560;">
+            <span id="layout-scale-val" style="min-width:50px;font-size:11px;color:#e0e0e0;">100%</span>
+        </label>
+        <div class="separator"></div>
+        <button id="save-btn">Save</button>
+        <button id="load-btn">Load</button>
+        <input type="file" id="load-input" accept=".collage,.json" style="display:none">
+        <button id="export-btn" disabled>Export</button>
+        <div class="separator"></div>
+        <button id="settings-btn">Settings</button>
+        <div style="position:relative;display:inline-block;">
+            <button id="tools-btn">Tools ▾</button>
+            <div id="tools-menu" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:#16213e;border:1px solid #0f3460;border-radius:4px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.4);margin-top:4px;">
+                <div id="tool-calendar" style="padding:8px 14px;cursor:pointer;font-size:13px;color:#e0e0e0;transition:background 0.15s;" onmouseover="this.style.background='#1a4a80'" onmouseout="this.style.background=''">Calendar Wizard...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings dialog -->
+    <div class="modal-backdrop" id="settings-modal">
+        <div class="modal">
+            <h2>Settings</h2>
+            <div class="settings-row">
+                <label>Paper</label>
+                <select id="paper-size">
+                    <option value="11x14">11" &times; 14"</option>
+                    <option value="11x17">11" &times; 17"</option>
+                    <option value="8.5x11">8.5" &times; 11"</option>
+                    <option value="13x19">13" &times; 19"</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+            <div class="settings-row" id="custom-dims" style="display:none;">
+                <label>Dims</label>
+                <input type="number" id="paper-width" value="11" min="1" max="60" step="0.5">
+                <span>&times;</span>
+                <input type="number" id="paper-height" value="14" min="1" max="60" step="0.5">
+            </div>
+            <div class="settings-row">
+                <label>DPI</label>
+                <input type="number" id="dpi" value="300" min="72" max="600" step="1">
+            </div>
+            <div class="settings-row">
+                <label>Border</label>
+                <input type="number" id="perimeter-margin" value="0.25" min="0" max="3" step="0.0625">
+            </div>
+            <div class="settings-row">
+                <label>Gap</label>
+                <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
+            </div>
+            <div class="modal-section">
+                <h3>Frame / Matte</h3>
+                <div class="settings-row">
+                    <label>Width (in)</label>
+                    <input type="number" id="setting-frame-width" value="0" min="0" max="4" step="0.125">
+                </div>
+                <div class="settings-row">
+                    <label>Color</label>
+                    <input type="color" id="setting-frame-color" value="#ffffff">
+                </div>
+                <div class="settings-row">
+                    <label>Image</label>
+                    <select id="setting-frame-image">
+                        <option value="">(none — solid color)</option>
+                    </select>
+                </div>
+                <p class="modal-hint">Adds a matte/frame around the layout. Content scales to fit inside. Frame image fills the border area.</p>
+            </div>
+            <div class="modal-section">
+                <h3>Layout</h3>
+                <div class="settings-row">
+                    <label>Equal sizes</label>
+                    <input type="checkbox" id="setting-equal-sizes" checked style="accent-color:#e94560;">
+                    <span>Make all cells equal size</span>
+                </div>
+            </div>
+            <div class="modal-section">
+                <h3>Resize Behavior</h3>
+                <div class="settings-row">
+                    <label>Stack resize</label>
+                    <select id="setting-stack-resize">
+                        <option value="single">Selected overlay only</option>
+                        <option value="row-col" selected>Entire row / column</option>
+                    </select>
+                </div>
+                <p class="modal-hint">When growing/shrinking with +/&minus; keys:<br>
+                    <b>Row / column</b> — width changes push overlays in the same column; height changes push overlays in the same row.<br>
+                    <b>Selected only</b> — only the selected overlay changes.</p>
+            </div>
+            <div class="modal-buttons">
+                <button id="settings-close-btn" class="primary">Done</button>
+            </div>
+        </div>
     </div>
 
     <!-- Sidebar -->
     <div class="sidebar">
+        <!-- Panel 1: Photos & Draw Order -->
         <div class="section">
             <h3>Photos <span id="photo-count" class="photo-count"></span></h3>
             <div id="file-list" class="file-list">
@@ -68,10 +127,15 @@
             </div>
         </div>
 
+        <!-- Panel 2: Selection & Properties -->
         <div class="section">
             <h3>Selected Cell</h3>
             <div id="cell-info">
-                <p class="hint">Click a cell to select it.</p>
+                <p class="hint">Click a cell or press <kbd>Tab</kbd> to cycle.</p>
+            </div>
+            <div id="cell-lock-row" class="ov-prop-row" style="display:none; margin-top:6px;">
+                <label>Fix position</label>
+                <input type="checkbox" id="cell-locked" style="accent-color:#e94560;">
             </div>
         </div>
 
@@ -84,32 +148,39 @@
                 <tr><td class="prop-label">Resolution</td><td id="prop-resolution">-</td></tr>
                 <tr><td class="prop-label">Cell Size</td><td id="prop-cellsize">-</td></tr>
             </table>
-            <div style="margin-top: 8px;">
-                <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
-            </div>
-        </div>
-
-        <div class="section" id="crop-section" style="display:none;">
-            <h3>Image Crop</h3>
-            <div class="zoom-group">
+            <div class="zoom-group" style="margin-top:6px;">
                 <label>Zoom</label>
                 <input type="range" id="scale-slider" min="0" max="100" value="0">
                 <input type="number" id="zoom-input" min="100" max="500" step="1" value="100" class="zoom-number">
                 <span class="zoom-pct">%</span>
             </div>
-            <div style="margin-top: 8px;">
-                <button id="reset-crop-btn">Reset Crop</button>
+            <div style="margin-top:6px; display:flex; gap:4px;">
+                <button id="raise-top-btn" style="flex:1;">Raise to Top</button>
+                <button id="send-bottom-btn" style="flex:1;">Send to Back</button>
+            </div>
+            <div style="margin-top:4px; display:flex; gap:4px;">
+                <button id="reset-crop-btn" style="flex:1;">Reset Crop</button>
+                <button id="add-to-layout-btn" style="flex:1;">Add to Layout</button>
+            </div>
+            <div style="margin-top:4px;">
+                <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
             </div>
         </div>
 
+        <!-- Overlays -->
         <div class="section" id="overlays-section" style="display:none;">
             <h3>Overlays <span id="overlay-count" class="photo-count"></span></h3>
             <div id="overlay-list" class="overlay-list"></div>
-            <p class="hint">Paste (<kbd>Ctrl+V</kbd>) to add overlay from clipboard</p>
+            <p class="hint">Paste (<kbd>Ctrl+V</kbd>) to add overlay</p>
         </div>
 
         <div class="section" id="overlay-props-section" style="display:none;">
             <h3>Overlay Properties</h3>
+            <div id="ov-image-info" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;"></div>
+            <div class="ov-prop-row">
+                <label>Fix position</label>
+                <input type="checkbox" id="ov-locked" style="accent-color:#e94560;">
+            </div>
             <div class="ov-prop-row">
                 <label>Position</label>
                 <input type="number" id="ov-x" step="0.0625" min="0"> <span>x</span>
@@ -133,22 +204,23 @@
             </div>
         </div>
 
+        <!-- Panel 3: Mode & Shortcuts -->
         <div class="section" id="mode-indicator">
             <div id="mode-badge" class="mode-badge mode-normal">LAYOUT MODE</div>
             <p class="hint" id="mode-hint">Double-click margin to enter resize mode</p>
         </div>
 
         <div class="section instructions">
-            <h3>How to Use</h3>
-            <p>1. Load/drop photos, set paper size, click <kbd>Generate</kbd></p>
-            <p>2. Click a cell to select; drag to pan image</p>
-            <p>3. Scroll wheel on selected cell to zoom</p>
-            <p>4. Click <kbd>Resize Cells</kbd> or double-click margin</p>
-            <p>5. In resize mode, drag any edge to resize</p>
-            <p>6. <kbd>Shift</kbd>+drag to swap images between cells</p>
-            <p>7. Drop a photo on a cell to replace it</p>
-            <p>8. <kbd>Ctrl+V</kbd> to paste overlay from clipboard</p>
-            <p>9. Click <kbd>Export JPEG</kbd> to save</p>
+            <h3>Shortcuts</h3>
+            <p><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> — cycle cells</p>
+            <p><kbd>Arrows</kbd> — move selected cell/overlay</p>
+            <p><kbd>-</kbd> / <kbd>+</kbd> — shrink / grow 10%</p>
+            <p><kbd>Shift+-</kbd> / <kbd>Shift++</kbd> — white margin</p>
+            <p><kbd>Ctrl+V</kbd> — paste overlay</p>
+            <p><kbd>Delete</kbd> — remove overlay</p>
+            <p>Hold 1s + drag — move entire cell</p>
+            <p><kbd>Shift</kbd>+drag — swap images</p>
+            <p>Scroll wheel — zoom in cell</p>
         </div>
     </div>
 
@@ -247,7 +319,8 @@
 
     function createCell(x, y, w, h) {
         return { id: nextCellId++, x: x, y: y, width: w, height: h,
-                 imageId: null, imageOffsetX: 0, imageOffsetY: 0, imageScale: 1 };
+                 imageId: null, imageOffsetX: 0, imageOffsetY: 0, imageScale: 1,
+                 locked: false };
     }
 
     function createCollage(pw, ph, dpi, pm, gm) {
@@ -270,6 +343,13 @@
     var overlays = [];
     var selectedOverlayId = null;
     var dropTargetCellId = null;
+    var dropZone = null; // 'replace' | 'above' | 'below' | 'left' | 'right'
+    var tabFlashTimer = null;
+    var tabFlashCellId = null;
+    var tabFlashOvId = null;
+    var selectedUnassignedImgId = null; // tracks selected image not in any cell
+    var frameOffsetPx = 0;    // frame offset in CSS pixels for coordinate conversion
+    var frameContentScale = 1; // content scale factor when frame is active
 
     function createOverlay(imageId, x, y, w, h) {
         return {
@@ -277,7 +357,9 @@
             imageId: imageId,
             x: x, y: y, width: w, height: h,
             mode: 'transparent',  // 'transparent' | 'filled'
-            fillColor: '#ffffff'
+            fillColor: '#ffffff',
+            locked: false,        // fix position — block move/resize
+            padding: 0            // white margin inside frame, in inches
         };
     }
 
@@ -287,8 +369,40 @@
     var MIN_CELL_SIZE = 0.75;
 
     function generateLayout(pw, ph, pm, gm, n) {
+        var equalSizes = document.getElementById('setting-equal-sizes').checked;
         var usable = { x: pm, y: pm, width: pw - 2*pm, height: ph - 2*pm };
-        return bspSplit(usable, n, gm).map(function(r) { return createCell(r.x, r.y, r.width, r.height); });
+        var rects = equalSizes ? gridLayout(usable, n, gm) : bspSplit(usable, n, gm);
+        return rects.map(function(r) { return createCell(r.x, r.y, r.width, r.height); });
+    }
+
+    function gridLayout(area, n, gap) {
+        // Find best cols x rows to fill area with minimal waste
+        var bestCols = 1, bestScore = Infinity;
+        for (var c = 1; c <= n; c++) {
+            var r = Math.ceil(n / c);
+            var cellW = (area.width - (c - 1) * gap) / c;
+            var cellH = (area.height - (r - 1) * gap) / r;
+            if (cellW < MIN_CELL_SIZE || cellH < MIN_CELL_SIZE) continue;
+            // Score: prefer aspect ratios close to the area's aspect ratio
+            var areaAspect = area.width / area.height;
+            var cellAspect = cellW / cellH;
+            var score = Math.abs(Math.log(cellAspect / areaAspect));
+            if (score < bestScore) { bestScore = score; bestCols = c; }
+        }
+        var cols = bestCols;
+        var rows = Math.ceil(n / cols);
+        var cellW = (area.width - (cols - 1) * gap) / cols;
+        var cellH = (area.height - (rows - 1) * gap) / rows;
+        var rects = [];
+        for (var i = 0; i < n; i++) {
+            var col = i % cols, row = Math.floor(i / cols);
+            rects.push({
+                x: area.x + col * (cellW + gap),
+                y: area.y + row * (cellH + gap),
+                width: cellW, height: cellH
+            });
+        }
+        return rects;
     }
 
     function bspSplit(b, n, g) {
@@ -490,18 +604,71 @@
     // ========================================================================
     // Renderer
     // ========================================================================
-    function renderCollage(ctx, collage, imgMgr, scale, selectedCellId, dragState, resizeMode, edges, hoveredEdgeIdx, draggedEdgeIdx, dropCellId, selOvId) {
+    function getFrameSettings() {
+        return {
+            width: parseFloat(document.getElementById('setting-frame-width').value) || 0,
+            color: document.getElementById('setting-frame-color').value || '#ffffff',
+            imageId: document.getElementById('setting-frame-image').value || null
+        };
+    }
+
+    function renderCollage(ctx, collage, imgMgr, scale, selectedCellId, dragState, resizeMode, edges, hoveredEdgeIdx, draggedEdgeIdx, dropCellId, selOvId, isExport) {
         var w = collage.paperWidth * collage.dpi * scale;
         var h = collage.paperHeight * collage.dpi * scale;
-        ctx.fillStyle = '#ffffff';
+
+        var frame = getFrameSettings();
+        var fw = frame.width * collage.dpi * scale; // frame width in pixels
+
+        // Fill entire canvas with frame color first
+        ctx.fillStyle = frame.color;
         ctx.fillRect(0, 0, w, h);
 
-        for (var i = 0; i < collage.cells.length; i++) {
+        // Draw frame background image if set
+        if (fw > 0 && frame.imageId && imgMgr) {
+            var frameImg = imgMgr.get(frame.imageId);
+            if (frameImg) {
+                var bmp = isExport ? frameImg.fullBitmap : (scale < 0.5 ? frameImg.thumbnail : frameImg.fullBitmap);
+                var bw = bmp.width, bh = bmp.height;
+                var isc = Math.max(w / bw, h / bh);
+                var iw = bw * isc, ih = bh * isc;
+                var ix = (w - iw) / 2, iy = (h - ih) / 2;
+                ctx.drawImage(bmp, ix, iy, iw, ih);
+            }
+        }
+
+        if (fw > 0) {
+            // Scale content to fit inside the frame
+            var innerW = w - fw * 2, innerH = h - fw * 2;
+            var contentScale = Math.min(innerW / w, innerH / h);
+            ctx.save();
+            ctx.translate(fw, fw);
+            ctx.scale(contentScale, contentScale);
+
+            // Store for coordinate conversion (use CSS pixels, not canvas pixels)
+            if (!isExport) {
+                var dpr = window.devicePixelRatio || 1;
+                frameOffsetPx = fw / dpr;
+                frameContentScale = contentScale;
+            }
+
+            // White background for content area
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+        } else {
+            if (!isExport) { frameOffsetPx = 0; frameContentScale = 1; }
+            // No frame — just white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+        }
+
+        // Draw in reverse order: last in array = bottom, first = top
+        for (var i = collage.cells.length - 1; i >= 0; i--) {
             var cell = collage.cells[i];
             var isDragSrc = dragState && dragState.sourceCellId === cell.id;
             var isDragTgt = (dragState && dragState.targetCellId === cell.id) || (cell.id === dropCellId);
+            var cellDropZone = (cell.id === dropCellId) ? dropZone : null;
             renderCell(ctx, cell, collage.dpi, scale, imgMgr,
-                       cell.id === selectedCellId, isDragSrc, isDragTgt);
+                       cell.id === selectedCellId, isDragSrc, isDragTgt, cellDropZone);
         }
 
         // Edge overlays in resize mode
@@ -512,20 +679,44 @@
             }
         }
 
+        // Whitespace drop preview
+        if (!isExport && dropWhitespaceRect) {
+            var wr = dropWhitespaceRect;
+            var wx = wr.x * collage.dpi * scale, wy = wr.y * collage.dpi * scale;
+            var ww = wr.width * collage.dpi * scale, wh = wr.height * collage.dpi * scale;
+            ctx.save();
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.15)';
+            ctx.fillRect(wx, wy, ww, wh);
+            ctx.strokeStyle = '#4CAF50'; ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(wx, wy, ww, wh);
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#4CAF50';
+            ctx.font = 'bold ' + Math.max(11, Math.min(14, ww/12)) + 'px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('Drop here', wx + ww/2, wy + wh/2);
+            ctx.restore();
+        }
+
         // Overlays — draw in reverse order (last in list = drawn first/bottom)
-        renderOverlays(ctx, collage.dpi, scale, imgMgr, selOvId);
+        renderOverlays(ctx, collage.dpi, scale, imgMgr, selOvId, isExport);
 
         // Drag ghost
         if (dragState && dragState.active && dragState.ghostX !== undefined) {
             renderDragGhost(ctx, dragState, imgMgr);
         }
+
+        // Close frame transform
+        if (fw > 0) {
+            ctx.restore();
+        }
     }
 
-    function renderOverlays(ctx, dpi, scale, imgMgr, selOvId) {
+    function renderOverlays(ctx, dpi, scale, imgMgr, selOvId, isExport) {
         for (var i = overlays.length - 1; i >= 0; i--) {
             var ov = overlays[i];
-            var ox = ov.x * dpi * scale, oy = ov.y * dpi * scale;
-            var ow = ov.width * dpi * scale, oh = ov.height * dpi * scale;
+            var ox = Math.round(ov.x * dpi * scale), oy = Math.round(ov.y * dpi * scale);
+            var ow = Math.round(ov.width * dpi * scale), oh = Math.round(ov.height * dpi * scale);
 
             ctx.save();
 
@@ -535,44 +726,80 @@
                 ctx.fillRect(ox, oy, ow, oh);
             }
 
-            // Draw image clipped to overlay rect
+            // White padding margin
+            var pad = (ov.padding || 0) * dpi * scale;
+            if (pad > 0 && ov.mode !== 'filled') {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(ox, oy, ow, oh);
+            }
+
+            // Draw image into overlay rect (inset by padding), using source-rect to avoid clip artifacts
             var img = imgMgr ? imgMgr.get(ov.imageId) : null;
             if (img) {
-                ctx.beginPath(); ctx.rect(ox, oy, ow, oh); ctx.clip();
-                // Cover-fit the image
-                var isc = Math.max(ow / img.naturalWidth, oh / img.naturalHeight);
-                var iw = img.naturalWidth * isc, ih = img.naturalHeight * isc;
-                var ix = ox + (ow - iw) / 2, iy = oy + (oh - ih) / 2;
-                var bmp = scale < 0.5 ? img.thumbnail : img.fullBitmap;
-                ctx.drawImage(bmp, ix, iy, iw, ih);
+                var imgX = ox + pad, imgY = oy + pad;
+                var imgW = ow - pad * 2, imgH = oh - pad * 2;
+                if (imgW > 0 && imgH > 0) {
+                    var bmp = (scale < 0.5 && !isExport) ? img.thumbnail : img.fullBitmap;
+                    var bw = bmp.width, bh = bmp.height;
+                    // Cover-fit: scale image to fill the overlay area
+                    var isc = Math.max(imgW / bw, imgH / bh);
+                    // Source rect: what portion of the bitmap to draw
+                    // Inset by 0.5px to avoid edge interpolation artifacts
+                    var sx = Math.max(0, (bw - imgW / isc) / 2 + 0.5);
+                    var sy = Math.max(0, (bh - imgH / isc) / 2 + 0.5);
+                    var sw = Math.min(bw - sx, imgW / isc - 1);
+                    var sh = Math.min(bh - sy, imgH / isc - 1);
+                    ctx.drawImage(bmp, sx, sy, sw, sh, imgX, imgY, imgW, imgH);
+                }
             }
 
             ctx.restore();
 
-            // Dotted outline
-            var isSel = (ov.id === selOvId);
-            ctx.setLineDash([4 * Math.max(1, scale * dpi / 72), 4 * Math.max(1, scale * dpi / 72)]);
-            ctx.strokeStyle = isSel ? '#2196F3' : 'rgba(255,255,255,0.7)';
-            ctx.lineWidth = isSel ? 2.5 : 1.5;
-            ctx.strokeRect(ox, oy, ow, oh);
-            ctx.setLineDash([]);
+            // Outline and resize handles (screen only, not in export)
+            if (!isExport) {
+                var isSel = (ov.id === selOvId);
+                var isFlash = (tabFlashOvId !== null && ov.id === tabFlashOvId);
 
-            // Resize handles for selected overlay
-            if (isSel) {
-                var hs = 5;
-                ctx.fillStyle = '#2196F3';
-                ctx.strokeStyle = '#fff';
-                ctx.lineWidth = 1;
-                var corners = [[ox,oy],[ox+ow,oy],[ox,oy+oh],[ox+ow,oy+oh]];
-                for (var ci = 0; ci < corners.length; ci++) {
-                    ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
-                    ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                // Only draw outline for selected or flashing overlays
+                if (isSel || isFlash) {
+                    var outlineColor = isFlash ? '#4CAF50' : '#2196F3';
+                    ctx.strokeStyle = outlineColor;
+                    ctx.lineWidth = isFlash ? 4 : 2.5;
+                    ctx.strokeRect(ox, oy, ow, oh);
+                }
+
+                if (isSel) {
+                    var hs = 5;
+                    var handleColor = isFlash ? '#4CAF50' : '#2196F3';
+                    ctx.fillStyle = handleColor;
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    var corners = [[ox,oy],[ox+ow,oy],[ox,oy+oh],[ox+ow,oy+oh]];
+                    for (var ci = 0; ci < corners.length; ci++) {
+                        ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                        ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                    }
+
+                    // Label badge on selected overlay
+                    var badgeText = 'OVERLAY';
+                    var badgeFont = Math.max(9, Math.min(12, ow / 10));
+                    ctx.font = 'bold ' + badgeFont + 'px sans-serif';
+                    var bw = ctx.measureText(badgeText).width + 8;
+                    var bh = badgeFont + 6;
+                    ctx.fillStyle = handleColor;
+                    ctx.globalAlpha = 0.85;
+                    ctx.fillRect(ox, oy - bh - 2, bw, bh);
+                    ctx.globalAlpha = 1;
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'top';
+                    ctx.fillText(badgeText, ox + 4, oy - bh);
                 }
             }
         }
     }
 
-    function renderCell(ctx, cell, dpi, scale, imgMgr, isSelected, isDragSrc, isDragTgt) {
+    function renderCell(ctx, cell, dpi, scale, imgMgr, isSelected, isDragSrc, isDragTgt, cellDropZone) {
         var x = cell.x * dpi * scale, y = cell.y * dpi * scale;
         var w = cell.width * dpi * scale, h = cell.height * dpi * scale;
 
@@ -606,14 +833,69 @@
         }
         ctx.restore();
 
-        if (isDragTgt) {
+        if (isDragTgt && cellDropZone) {
+            // Draw drop zone indicators
+            var et = 0.25; // edge threshold fraction
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+
+            if (cellDropZone === 'replace') {
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(x + w * et, y + h * et, w * (1 - 2*et), h * (1 - 2*et));
+            } else if (cellDropZone === 'above') {
+                ctx.fillStyle = '#2196F3';
+                ctx.fillRect(x, y, w, h * et);
+            } else if (cellDropZone === 'below') {
+                ctx.fillStyle = '#2196F3';
+                ctx.fillRect(x, y + h * (1 - et), w, h * et);
+            } else if (cellDropZone === 'left') {
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(x, y, w * et, h);
+            } else if (cellDropZone === 'right') {
+                ctx.fillStyle = '#FF9800';
+                ctx.fillRect(x + w * (1 - et), y, w * et, h);
+            }
+            ctx.globalAlpha = 1.0;
+            ctx.restore();
+
+            // Label
+            ctx.save();
+            var labels = { replace: 'Replace', above: '↑ Insert Above', below: '↓ Insert Below', left: '← Insert Left', right: '→ Insert Right' };
+            var colors = { replace: '#4CAF50', above: '#2196F3', below: '#2196F3', left: '#FF9800', right: '#FF9800' };
+            ctx.fillStyle = colors[cellDropZone];
+            ctx.font = 'bold ' + Math.max(11, Math.min(14, w/10)) + 'px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            var lx = x + w/2, ly = y + h/2;
+            if (cellDropZone === 'above') ly = y + h * et / 2;
+            else if (cellDropZone === 'below') ly = y + h * (1 - et/2);
+            else if (cellDropZone === 'left') lx = x + w * et / 2;
+            else if (cellDropZone === 'right') lx = x + w * (1 - et/2);
+            ctx.fillText(labels[cellDropZone], lx, ly);
+            ctx.restore();
+
+            // Outline
+            ctx.strokeStyle = colors[cellDropZone]; ctx.lineWidth = 3;
+            ctx.strokeRect(x+1.5, y+1.5, w-3, h-3);
+        } else if (isDragTgt) {
             ctx.strokeStyle = '#4CAF50'; ctx.lineWidth = 4;
             ctx.setLineDash([6, 4]);
             ctx.strokeRect(x+2, y+2, w-4, h-4);
             ctx.setLineDash([]);
         } else if (isSelected) {
-            ctx.strokeStyle = '#2196F3'; ctx.lineWidth = 3;
+            var isFlash = (tabFlashCellId !== null && cell.id === tabFlashCellId);
+            ctx.strokeStyle = isFlash ? '#4CAF50' : '#2196F3';
+            ctx.lineWidth = isFlash ? 5 : 3;
             ctx.strokeRect(x+1.5, y+1.5, w-3, h-3);
+            // Corner resize handles
+            var hs = 5;
+            ctx.fillStyle = isFlash ? '#4CAF50' : '#2196F3';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            var corners = [[x,y],[x+w,y],[x,y+h],[x+w,y+h]];
+            for (var ci = 0; ci < corners.length; ci++) {
+                ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+            }
         }
     }
 
@@ -679,7 +961,8 @@
     var MIN_DRAG_CELL = 0.5;
     var IMAGE_DRAG_THRESHOLD = 8;
 
-    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3, ST_DRAG_OVERLAY = 4, ST_RESIZE_OVERLAY = 5;
+    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3, ST_DRAG_OVERLAY = 4, ST_RESIZE_OVERLAY = 5, ST_RESIZE_CELL = 6, ST_DRAG_CELL = 7;
+    var LONG_PRESS_MS = 800;
 
     class InteractionManager {
         constructor(collage, imgMgr, onChange) {
@@ -715,6 +998,16 @@
             this.dragOvOffX = 0; this.dragOvOffY = 0;
             this.resizeOvHandle = null;
             this.resizeOvOrig = null;
+
+            // Cell resize state
+            this.resizeCellHandle = null; // 'nw','ne','sw','se'
+            this.resizeCellOrig = null;
+
+            // Long-press cell drag state
+            this.longPressTimer = null;
+            this.longPressReady = false; // true after timer fires, before drag starts
+            this.dragCellOffX = 0;
+            this.dragCellOffY = 0;
         }
 
         setDisplayInfo(ds, dpi) { this.displayScale = ds; this.dpi = dpi; }
@@ -740,6 +1033,24 @@
                 { name: 'ne', x: ov.x + ov.width, y: ov.y },
                 { name: 'sw', x: ov.x, y: ov.y + ov.height },
                 { name: 'se', x: ov.x + ov.width, y: ov.y + ov.height }
+            ];
+            for (var i = 0; i < corners.length; i++) {
+                var cx = this.i2d(corners[i].x), cy = this.i2d(corners[i].y);
+                if (Math.abs(dx - cx) < hs && Math.abs(dy - cy) < hs) return corners[i].name;
+            }
+            return null;
+        }
+
+        hitTestCellHandle(dx, dy) {
+            if (this.selectedCellId === null) return null;
+            var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+            if (!cell || cell.locked) return null;
+            var hs = 8; // hit size in display pixels
+            var corners = [
+                { name: 'nw', x: cell.x, y: cell.y },
+                { name: 'ne', x: cell.x + cell.width, y: cell.y },
+                { name: 'sw', x: cell.x, y: cell.y + cell.height },
+                { name: 'se', x: cell.x + cell.width, y: cell.y + cell.height }
             ];
             for (var i = 0; i < corners.length; i++) {
                 var cx = this.i2d(corners[i].x), cy = this.i2d(corners[i].y);
@@ -796,10 +1107,13 @@
                 if (handle) {
                     var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
                     if (ov) {
-                        this.state = ST_RESIZE_OVERLAY;
-                        this.resizeOvHandle = handle;
-                        this.resizeOvOrig = { x: ov.x, y: ov.y, width: ov.width, height: ov.height, mx: this.d2i(dx), my: this.d2i(dy) };
+                        selectedOverlayId = ov.id;
                         this.selectedCellId = null;
+                        if (!ov.locked) {
+                            this.state = ST_RESIZE_OVERLAY;
+                            this.resizeOvHandle = handle;
+                            this.resizeOvOrig = { x: ov.x, y: ov.y, width: ov.width, height: ov.height, mx: this.d2i(dx), my: this.d2i(dy) };
+                        }
                         this.onChange();
                         return;
                     }
@@ -810,10 +1124,12 @@
                 if (hitOv) {
                     selectedOverlayId = hitOv.id;
                     this.selectedCellId = null;
-                    this.state = ST_DRAG_OVERLAY;
-                    this.dragOvId = hitOv.id;
-                    this.dragOvOffX = this.d2i(dx) - hitOv.x;
-                    this.dragOvOffY = this.d2i(dy) - hitOv.y;
+                    if (!hitOv.locked) {
+                        this.state = ST_DRAG_OVERLAY;
+                        this.dragOvId = hitOv.id;
+                        this.dragOvOffX = this.d2i(dx) - hitOv.x;
+                        this.dragOvOffY = this.d2i(dy) - hitOv.y;
+                    }
                     this.onChange();
                     return;
                 }
@@ -839,9 +1155,22 @@
                 }
             }
 
+            // Check selected cell resize handles
+            var cellHandle = this.hitTestCellHandle(dx, dy);
+            if (cellHandle) {
+                var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                if (cell) {
+                    this.state = ST_RESIZE_CELL;
+                    this.resizeCellHandle = cellHandle;
+                    this.resizeCellOrig = { x: cell.x, y: cell.y, width: cell.width, height: cell.height, mx: this.d2i(dx), my: this.d2i(dy) };
+                    this.onChange();
+                    return;
+                }
+            }
+
             // Shift+drag for image swap
             var cell = this.hitTestCell(dx, dy);
-            if (shiftKey && cell && cell.imageId) {
+            if (shiftKey && cell && cell.imageId && !cell.locked) {
                 this.selectedCellId = cell.id;
                 this.pendingImageDrag = true;
                 this.onChange();
@@ -851,19 +1180,92 @@
             // Normal click: select and immediately begin pan
             if (cell) {
                 this.selectedCellId = cell.id;
-                if (cell.imageId && !this.resizeMode) {
+                this.longPressReady = false;
+                if (cell.imageId && !this.resizeMode && !cell.locked) {
                     this.state = ST_PAN_IMAGE;
                     this.panStartX = dx; this.panStartY = dy;
                     this.panOrigOX = cell.imageOffsetX; this.panOrigOY = cell.imageOffsetY;
+
+                    // Start long-press timer to switch to cell drag
+                    this.clearLongPress();
+                    var self = this;
+                    this.longPressTimer = setTimeout(function() {
+                        self.longPressTimer = null;
+                        self.longPressReady = true;
+                        // Revert any pan that happened during the hold
+                        cell.imageOffsetX = self.panOrigOX;
+                        cell.imageOffsetY = self.panOrigOY;
+                        // Switch to cell drag
+                        self.state = ST_DRAG_CELL;
+                        self.dragCellOffX = self.d2i(self.mouseDownX) - cell.x;
+                        self.dragCellOffY = self.d2i(self.mouseDownY) - cell.y;
+                        self.onChange();
+                    }, LONG_PRESS_MS);
                 }
                 this.onChange();
             } else {
                 this.selectedCellId = null;
+                this.clearLongPress();
                 this.onChange();
             }
         }
 
+        clearLongPress() {
+            if (this.longPressTimer) {
+                clearTimeout(this.longPressTimer);
+                this.longPressTimer = null;
+            }
+            this.longPressReady = false;
+        }
+
         onMouseMove(dx, dy) {
+            if (this.state === ST_DRAG_CELL) {
+                var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                if (cell) {
+                    var pm = this.collage.perimeterMargin;
+                    cell.x = Math.max(pm, this.d2i(dx) - this.dragCellOffX);
+                    cell.y = Math.max(pm, this.d2i(dy) - this.dragCellOffY);
+                    // Keep within paper bounds
+                    cell.x = Math.min(cell.x, this.collage.paperWidth - pm - cell.width);
+                    cell.y = Math.min(cell.y, this.collage.paperHeight - pm - cell.height);
+                    this.onChange();
+                }
+                return;
+            }
+
+            if (this.state === ST_RESIZE_CELL) {
+                var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                if (cell && this.resizeCellOrig) {
+                    var ix = this.d2i(dx), iy = this.d2i(dy);
+                    var o = this.resizeCellOrig;
+                    var MIN_CS = 0.5;
+                    var h = this.resizeCellHandle;
+                    if (h === 'se') {
+                        cell.width = Math.max(MIN_CS, ix - o.x);
+                        cell.height = Math.max(MIN_CS, iy - o.y);
+                    } else if (h === 'sw') {
+                        var newX = Math.min(ix, o.x + o.width - MIN_CS);
+                        cell.width = o.x + o.width - newX;
+                        cell.x = newX;
+                        cell.height = Math.max(MIN_CS, iy - o.y);
+                    } else if (h === 'ne') {
+                        cell.width = Math.max(MIN_CS, ix - o.x);
+                        var newY = Math.min(iy, o.y + o.height - MIN_CS);
+                        cell.height = o.y + o.height - newY;
+                        cell.y = newY;
+                    } else if (h === 'nw') {
+                        var newX = Math.min(ix, o.x + o.width - MIN_CS);
+                        var newY = Math.min(iy, o.y + o.height - MIN_CS);
+                        cell.width = o.x + o.width - newX;
+                        cell.height = o.y + o.height - newY;
+                        cell.x = newX;
+                        cell.y = newY;
+                    }
+                    this.onChange();
+                }
+                return;
+            }
+
             if (this.state === ST_DRAG_OVERLAY) {
                 var ov = overlays.find(function(o) { return o.id === this.dragOvId; }.bind(this));
                 if (ov) {
@@ -940,6 +1342,10 @@
                 var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
                 if (!cell || !cell.imageId) return;
                 var ddx = dx - this.panStartX, ddy = dy - this.panStartY;
+                // Cancel long-press if user starts moving (panning)
+                if (this.longPressTimer && Math.hypot(ddx, ddy) > 5) {
+                    this.clearLongPress();
+                }
                 var r = 1 / (cell.imageScale * this.displayScale);
                 cell.imageOffsetX = this.panOrigOX - ddx * r;
                 cell.imageOffsetY = this.panOrigOY - ddy * r;
@@ -959,11 +1365,31 @@
         }
 
         onMouseUp(dx, dy) {
+            this.clearLongPress();
+
+            if (this.state === ST_DRAG_CELL) {
+                this.rebuildEdges();
+                this.state = ST_IDLE;
+                this.onChange();
+                return;
+            }
+
             if (this.state === ST_DRAG_OVERLAY || this.state === ST_RESIZE_OVERLAY) {
                 this.state = ST_IDLE;
                 this.dragOvId = null;
                 this.resizeOvHandle = null;
                 this.resizeOvOrig = null;
+                this.onChange();
+                return;
+            }
+
+            if (this.state === ST_RESIZE_CELL) {
+                var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
+                if (cell) this.refitCell(cell);
+                this.rebuildEdges();
+                this.state = ST_IDLE;
+                this.resizeCellHandle = null;
+                this.resizeCellOrig = null;
                 this.onChange();
                 return;
             }
@@ -1067,7 +1493,7 @@
         }
 
         onWheel(dx, dy, deltaY) {
-            if (!this.selectedCellId) return;
+            if (this.selectedCellId === null) return;
             var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
             if (!cell || !cell.imageId) return;
             var img = this.imgMgr.get(cell.imageId);
@@ -1081,7 +1507,7 @@
         }
 
         setZoomPercent(pct) {
-            if (!this.selectedCellId) return;
+            if (this.selectedCellId === null) return;
             var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
             if (!cell || !cell.imageId) return;
             var img = this.imgMgr.get(cell.imageId);
@@ -1094,7 +1520,7 @@
         }
 
         getZoomPercent() {
-            if (!this.selectedCellId) return 100;
+            if (this.selectedCellId === null) return 100;
             var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
             if (!cell || !cell.imageId) return 100;
             var img = this.imgMgr.get(cell.imageId);
@@ -1117,6 +1543,8 @@
         getCursorStyle(dx, dy) {
             if (this.state === ST_DRAG_OVERLAY) return 'move';
             if (this.state === ST_RESIZE_OVERLAY) return this.resizeOvHandle === 'nw' || this.resizeOvHandle === 'se' ? 'nwse-resize' : 'nesw-resize';
+            if (this.state === ST_DRAG_CELL) return 'grabbing';
+            if (this.state === ST_RESIZE_CELL) return this.resizeCellHandle === 'nw' || this.resizeCellHandle === 'se' ? 'nwse-resize' : 'nesw-resize';
             if (this.state === ST_DRAG_EDGE) return this.edges[this.draggedEdgeIdx].orientation === 'v' ? 'col-resize' : 'row-resize';
             if (this.state === ST_DRAG_IMAGE) return 'grabbing';
             if (this.state === ST_PAN_IMAGE) return 'grabbing';
@@ -1128,6 +1556,10 @@
                 var hitOv = this.hitTestOverlay(dx, dy);
                 if (hitOv) return 'move';
             }
+
+            // Check selected cell handles
+            var cellHandle = this.hitTestCellHandle(dx, dy);
+            if (cellHandle) return (cellHandle === 'nw' || cellHandle === 'se') ? 'nwse-resize' : 'nesw-resize';
 
             if (this.resizeMode) {
                 var ei = this.hitTestEdge(dx, dy);
@@ -1146,20 +1578,234 @@
     // ========================================================================
     // Export
     // ========================================================================
+    function getLayoutScale() {
+        var el = document.getElementById('layout-scale');
+        return el ? parseInt(el.value) / 100 : 1;
+    }
+
     async function exportCollage(collage, imgMgr) {
-        var ow = Math.round(collage.paperWidth * collage.dpi);
-        var oh = Math.round(collage.paperHeight * collage.dpi);
+        var ls = getLayoutScale();
+        var ow = Math.round(collage.paperWidth * collage.dpi * ls);
+        var oh = Math.round(collage.paperHeight * collage.dpi * ls);
         var oc = new OffscreenCanvas(ow, oh);
         var octx = oc.getContext('2d');
-        renderCollage(octx, collage, imgMgr, 1.0, null, null, false, null, -1, -1, null, null);
+        renderCollage(octx, collage, imgMgr, ls, null, null, false, null, -1, -1, null, null, true);
         var blob = await oc.convertToBlob({ type: 'image/jpeg', quality: 1.0 });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'collage_' + collage.paperWidth + 'x' + collage.paperHeight + '_' + collage.dpi + 'dpi.jpg';
+        var sw = (collage.paperWidth * ls).toFixed(1), sh = (collage.paperHeight * ls).toFixed(1);
+        a.download = 'collage_' + sw + 'x' + sh + '_' + collage.dpi + 'dpi.jpg';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(url);
         return { width: ow, height: oh, sizeMB: (blob.size / 1048576).toFixed(1) };
+    }
+
+    // ========================================================================
+    // Save / Load Project
+    // ========================================================================
+
+    function fileToDataURL(file) {
+        return new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function() { resolve(reader.result); };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function dataURLtoBlob(dataURL) {
+        var parts = dataURL.split(',');
+        var mime = parts[0].match(/:(.*?);/)[1];
+        var binary = atob(parts[1]);
+        var arr = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+    }
+
+    async function saveProject(collage, imgMgr) {
+        updateStatus('Saving project...');
+
+        // Serialize images as base64
+        var imageData = {};
+        var allImages = imgMgr.getAll();
+        for (var i = 0; i < allImages.length; i++) {
+            var img = allImages[i];
+            var dataURL = await fileToDataURL(img.file);
+            imageData[img.id] = {
+                dataURL: dataURL,
+                fileName: img.fileName,
+                enabled: img.enabled
+            };
+        }
+
+        var project = {
+            version: 1,
+            collage: {
+                paperWidth: collage.paperWidth,
+                paperHeight: collage.paperHeight,
+                dpi: collage.dpi,
+                perimeterMargin: collage.perimeterMargin,
+                gutterMargin: collage.gutterMargin,
+                cells: collage.cells.map(function(c) {
+                    return {
+                        id: c.id, x: c.x, y: c.y, width: c.width, height: c.height,
+                        imageId: c.imageId,
+                        imageOffsetX: c.imageOffsetX, imageOffsetY: c.imageOffsetY,
+                        imageScale: c.imageScale,
+                        locked: c.locked || false
+                    };
+                })
+            },
+            overlays: overlays.map(function(ov) {
+                return {
+                    id: ov.id, imageId: ov.imageId,
+                    x: ov.x, y: ov.y, width: ov.width, height: ov.height,
+                    mode: ov.mode, fillColor: ov.fillColor,
+                    locked: ov.locked || false,
+                    padding: ov.padding || 0
+                };
+            }),
+            images: imageData,
+            settings: {
+                stackResize: document.getElementById('setting-stack-resize').value,
+                frameWidth: parseFloat(document.getElementById('setting-frame-width').value) || 0,
+                frameColor: document.getElementById('setting-frame-color').value,
+                frameImageId: document.getElementById('setting-frame-image').value || null
+            }
+        };
+
+        var json = JSON.stringify(project);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'collage_' + collage.paperWidth + 'x' + collage.paperHeight + '.collage';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        var sizeMB = (blob.size / 1048576).toFixed(1);
+        updateStatus('Project saved (' + sizeMB + ' MB)');
+    }
+
+    async function loadProject(file) {
+        updateStatus('Loading project...');
+        try {
+            var text = await file.text();
+            var project = JSON.parse(text);
+            if (!project.version || !project.collage) {
+                throw new Error('Invalid project file');
+            }
+
+            // Clear existing state
+            imageManager.getIds().forEach(function(id) { imageManager.remove(id); });
+            overlays = [];
+            selectedOverlayId = null;
+
+            // Load images
+            var idMap = {}; // old id → new id
+            var imageEntries = Object.entries(project.images);
+            for (var i = 0; i < imageEntries.length; i++) {
+                var oldId = imageEntries[i][0];
+                var imgData = imageEntries[i][1];
+                var blob = dataURLtoBlob(imgData.dataURL);
+                var imgFile = new File([blob], imgData.fileName, { type: blob.type });
+                var newIds = await imageManager.loadFiles([imgFile]);
+                var newId = newIds[0];
+                // Update the id in the map
+                idMap[oldId] = newId;
+                imageManager.setEnabled(newId, imgData.enabled);
+            }
+
+            // Rebuild collage
+            var pc = project.collage;
+            collage = createCollage(pc.paperWidth, pc.paperHeight, pc.dpi,
+                                     pc.perimeterMargin, pc.gutterMargin);
+            nextCellId = 0;
+            collage.cells = pc.cells.map(function(c) {
+                var cell = createCell(c.x, c.y, c.width, c.height);
+                cell.imageId = idMap[c.imageId] || c.imageId;
+                cell.imageOffsetX = c.imageOffsetX;
+                cell.imageOffsetY = c.imageOffsetY;
+                cell.imageScale = c.imageScale;
+                cell.locked = c.locked || false;
+                return cell;
+            });
+
+            // Rebuild overlays
+            nextOverlayId = 0;
+            overlays = project.overlays.map(function(ov) {
+                var newOv = createOverlay(idMap[ov.imageId] || ov.imageId,
+                                          ov.x, ov.y, ov.width, ov.height);
+                newOv.mode = ov.mode;
+                newOv.fillColor = ov.fillColor;
+                newOv.locked = ov.locked || false;
+                newOv.padding = ov.padding || 0;
+                return newOv;
+            });
+
+            // Restore settings
+            if (project.settings) {
+                document.getElementById('setting-stack-resize').value = project.settings.stackResize || 'row-col';
+                if (project.settings.frameWidth !== undefined) {
+                    document.getElementById('setting-frame-width').value = project.settings.frameWidth;
+                }
+                if (project.settings.frameColor) {
+                    document.getElementById('setting-frame-color').value = project.settings.frameColor;
+                }
+                if (project.settings.frameImageId) {
+                    // Map old image ID to new one
+                    var mappedId = idMap[project.settings.frameImageId] || project.settings.frameImageId;
+                    // Will be set after renderFileList populates the dropdown
+                    setTimeout(function() {
+                        document.getElementById('setting-frame-image').value = mappedId;
+                    }, 0);
+                }
+            }
+
+            // Update paper size selector
+            var sizeKey = pc.paperWidth + 'x' + pc.paperHeight;
+            var paperSelect = document.getElementById('paper-size');
+            var found = false;
+            for (var i = 0; i < paperSelect.options.length; i++) {
+                if (paperSelect.options[i].value === sizeKey) { paperSelect.value = sizeKey; found = true; break; }
+            }
+            if (!found) {
+                paperSelect.value = 'custom';
+                document.getElementById('paper-width').value = pc.paperWidth;
+                document.getElementById('paper-height').value = pc.paperHeight;
+                document.getElementById('custom-dims').style.display = 'flex';
+            }
+            document.getElementById('dpi').value = pc.dpi;
+            document.getElementById('perimeter-margin').value = pc.perimeterMargin;
+            document.getElementById('gutter-margin').value = pc.gutterMargin;
+
+            // Rebuild interaction
+            interaction = new InteractionManager(collage, imageManager, function() { dirty = true; updateCellInfo(); });
+            interaction.setDisplayInfo(displayScale, collage.dpi);
+
+            // Update UI
+            dirty = true;
+            renderFileList();
+            renderOverlayList();
+            updateOverlayProps();
+            updateCellInfo();
+            updateModeBadge();
+            updateDropPlaceholder();
+            updateLayoutScaleLabel();
+            document.getElementById('overlays-section').style.display = overlays.length ? '' : 'none';
+            generateBtn.disabled = false;
+            randomizeBtn.disabled = false;
+            refreshBtn.disabled = false;
+            resizeModeBtn.disabled = false;
+            exportBtn.disabled = false;
+
+            updateStatus('Project loaded — ' + collage.cells.length + ' cells, ' +
+                          overlays.length + ' overlays, ' + imageManager.count() + ' images');
+        } catch (err) {
+            updateStatus('Load error: ' + err.message);
+            console.error('Load error:', err);
+        }
     }
 
     // ========================================================================
@@ -1174,9 +1820,9 @@
 
     var fileInput, paperSelect, customDims, paperWidthInput, paperHeightInput;
     var dpiInput, perimeterInput, gutterInput;
-    var generateBtn, randomizeBtn, exportBtn, resizeModeBtn;
+    var generateBtn, randomizeBtn, refreshBtn, exportBtn, resizeModeBtn;
     var statusBar, cellInfo, scaleSlider, resetCropBtn, zoomInput;
-    var imagePropsSection, cropSection;
+    var imagePropsSection;
     var propFilename, propDate, propTime, propResolution, propCellsize;
     var modeBadge, modeHint;
 
@@ -1193,6 +1839,7 @@
         gutterInput = document.getElementById('gutter-margin');
         generateBtn = document.getElementById('generate-btn');
         randomizeBtn = document.getElementById('randomize-btn');
+        refreshBtn = document.getElementById('refresh-btn');
         resizeModeBtn = document.getElementById('resize-mode-btn');
         exportBtn = document.getElementById('export-btn');
         statusBar = document.getElementById('status-bar');
@@ -1201,7 +1848,7 @@
         zoomInput = document.getElementById('zoom-input');
         resetCropBtn = document.getElementById('reset-crop-btn');
         imagePropsSection = document.getElementById('image-props-section');
-        cropSection = document.getElementById('crop-section');
+        // cropSection merged into imagePropsSection
         propFilename = document.getElementById('prop-filename');
         propDate = document.getElementById('prop-date');
         propTime = document.getElementById('prop-time');
@@ -1214,13 +1861,49 @@
         paperSelect.addEventListener('change', onPaperChange);
         generateBtn.addEventListener('click', onGenerate);
         randomizeBtn.addEventListener('click', onRandomize);
+        refreshBtn.addEventListener('click', onRefresh);
         resizeModeBtn.addEventListener('click', onResizeModeToggle);
         exportBtn.addEventListener('click', onExport);
+        // Tools menu
+        var toolsMenu = document.getElementById('tools-menu');
+        document.getElementById('tools-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            toolsMenu.style.display = toolsMenu.style.display === 'none' ? '' : 'none';
+        });
+        document.addEventListener('click', function() { toolsMenu.style.display = 'none'; });
+        document.getElementById('tool-calendar').addEventListener('click', function() {
+            toolsMenu.style.display = 'none';
+            alert('Calendar Wizard\n\nThis feature is coming soon.\n\nIt will allow you to create 12, 18, or 24 month calendars, assigning a saved collage layout to each month.');
+        });
+
+        document.getElementById('layout-scale').addEventListener('input', function() {
+            updateLayoutScaleLabel();
+        });
+        document.getElementById('save-btn').addEventListener('click', function() {
+            if (collage) saveProject(collage, imageManager);
+        });
+        document.getElementById('load-btn').addEventListener('click', function() {
+            document.getElementById('load-input').click();
+        });
+        document.getElementById('load-input').addEventListener('change', function(e) {
+            if (e.target.files.length) {
+                loadProject(e.target.files[0]);
+                e.target.value = '';
+            }
+        });
         scaleSlider.addEventListener('input', onScaleSlider);
         zoomInput.addEventListener('change', onZoomInput);
         zoomInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') onZoomInput(); });
         resetCropBtn.addEventListener('click', onResetCrop);
         document.getElementById('remove-photo-btn').addEventListener('click', onRemovePhoto);
+        document.getElementById('raise-top-btn').addEventListener('click', onRaiseToTop);
+        document.getElementById('send-bottom-btn').addEventListener('click', onSendToBottom);
+        document.getElementById('add-to-layout-btn').addEventListener('click', onAddToLayout);
+        document.getElementById('cell-locked').addEventListener('change', function() {
+            if (!interaction || interaction.selectedCellId === null || !collage) return;
+            var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+            if (cell) { cell.locked = this.checked; dirty = true; }
+        });
 
         // Sidebar file drop zone
         var fileDropZone = document.getElementById('file-drop-zone');
@@ -1282,17 +1965,173 @@
         ['ov-x','ov-y','ov-w','ov-h'].forEach(function(id) {
             document.getElementById(id).addEventListener('change', onOverlayPropChange);
         });
+        document.getElementById('ov-locked').addEventListener('change', onOverlayPropChange);
         document.getElementById('ov-mode').addEventListener('change', onOverlayPropChange);
         document.getElementById('ov-fill').addEventListener('input', onOverlayPropChange);
         document.getElementById('delete-overlay-btn').addEventListener('click', onDeleteOverlay);
 
-        // Delete key for overlays
+        // Keyboard shortcuts for overlays and cells
+        var MOVE_STEP = 0.25; // inches per arrow key press
         document.addEventListener('keydown', function(e) {
-            if (selectedOverlayId !== null && (e.key === 'Delete' || e.key === 'Backspace')) {
-                var ae = document.activeElement;
-                if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+            var ae = document.activeElement;
+            if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+
+            var key = e.key;
+
+            // TAB — cycle through cells
+            if (key === 'Tab' && collage && collage.cells.length > 0) {
                 e.preventDefault();
-                onDeleteOverlay();
+                var cells = collage.cells;
+                var curIdx = -1;
+                if (interaction && interaction.selectedCellId !== null) {
+                    curIdx = cells.findIndex(function(c) { return c.id === interaction.selectedCellId; });
+                }
+                var nextIdx = e.shiftKey
+                    ? (curIdx <= 0 ? cells.length - 1 : curIdx - 1)
+                    : (curIdx + 1) % cells.length;
+                var nextCell = cells[nextIdx];
+                if (interaction) interaction.selectedCellId = nextCell.id;
+                selectedOverlayId = null;
+
+                // Flash green border
+                if (tabFlashTimer) clearTimeout(tabFlashTimer);
+                tabFlashCellId = nextCell.id;
+                tabFlashTimer = setTimeout(function() {
+                    tabFlashCellId = null;
+                    dirty = true;
+                }, 2000);
+
+                dirty = true;
+                updateCellInfo();
+                return;
+            }
+
+            // --- Overlay shortcuts ---
+            if (selectedOverlayId !== null) {
+                // Delete key
+                if (key === 'Delete' || key === 'Backspace') {
+                    e.preventDefault();
+                    onDeleteOverlay();
+                    return;
+                }
+
+                var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+                if (!ov || ov.locked) return;
+
+                // Arrow keys — move overlay
+                if (key === 'ArrowLeft') { e.preventDefault(); ov.x -= MOVE_STEP; dirty = true; updateOverlayProps(); return; }
+                if (key === 'ArrowRight') { e.preventDefault(); ov.x += MOVE_STEP; dirty = true; updateOverlayProps(); return; }
+                if (key === 'ArrowUp') { e.preventDefault(); ov.y -= MOVE_STEP; dirty = true; updateOverlayProps(); return; }
+                if (key === 'ArrowDown') { e.preventDefault(); ov.y += MOVE_STEP; dirty = true; updateOverlayProps(); return; }
+
+                // - key: shrink by 10% (Shift: add white padding)
+                if (key === '-' || key === '_') {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        ov.padding = Math.min((ov.padding || 0) + 0.05,
+                            Math.min(ov.width, ov.height) / 2 - 0.1);
+                        updateStatus('Padding: ' + ov.padding.toFixed(2) + '"');
+                    } else {
+                        var cx = ov.x + ov.width / 2, cy = ov.y + ov.height / 2;
+                        ov.width = Math.max(0.25, ov.width * 0.9);
+                        ov.height = Math.max(0.25, ov.height * 0.9);
+                        ov.x = cx - ov.width / 2;
+                        ov.y = cy - ov.height / 2;
+                    }
+                    dirty = true; updateOverlayProps(); return;
+                }
+
+                // + key: grow by ~10% (Shift: reduce white padding)
+                if (key === '=' || key === '+') {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                        ov.padding = Math.max(0, (ov.padding || 0) - 0.05);
+                        updateStatus('Padding: ' + ov.padding.toFixed(2) + '"');
+                    } else {
+                        var cx = ov.x + ov.width / 2, cy = ov.y + ov.height / 2;
+                        ov.width = ov.width * (1 / 0.9);
+                        ov.height = ov.height * (1 / 0.9);
+                        ov.x = cx - ov.width / 2;
+                        ov.y = cy - ov.height / 2;
+                    }
+                    dirty = true; updateOverlayProps(); return;
+                }
+                return;
+            }
+
+            // --- Cell shortcuts ---
+            if (!interaction || !collage || interaction.selectedCellId === null) return;
+            var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+            if (!cell || cell.locked) return;
+
+            // Arrow keys — move cell
+            if (key === 'ArrowLeft') { e.preventDefault(); cell.x -= MOVE_STEP; dirty = true; updateCellInfo(); return; }
+            if (key === 'ArrowRight') { e.preventDefault(); cell.x += MOVE_STEP; dirty = true; updateCellInfo(); return; }
+            if (key === 'ArrowUp') { e.preventDefault(); cell.y -= MOVE_STEP; dirty = true; updateCellInfo(); return; }
+            if (key === 'ArrowDown') { e.preventDefault(); cell.y += MOVE_STEP; dirty = true; updateCellInfo(); return; }
+
+            // - key: shrink cell by 10%, keep center
+            if (key === '-' || key === '_') {
+                e.preventDefault();
+                var cx = cell.x + cell.width / 2, cy = cell.y + cell.height / 2;
+                cell.width = Math.max(0.5, cell.width * 0.9);
+                cell.height = Math.max(0.5, cell.height * 0.9);
+                cell.x = cx - cell.width / 2;
+                cell.y = cy - cell.height / 2;
+                if (cell.imageId) {
+                    var img = imageManager.get(cell.imageId);
+                    if (img) {
+                        var fit = computeDefaultFit(cell, img.naturalWidth, img.naturalHeight, collage.dpi);
+                        cell.imageScale = fit.imageScale;
+                        cell.imageOffsetX = fit.imageOffsetX;
+                        cell.imageOffsetY = fit.imageOffsetY;
+                    }
+                }
+                dirty = true; updateCellInfo(); return;
+            }
+
+            // + key: grow cell by ~10%, keep center
+            if (key === '=' || key === '+') {
+                e.preventDefault();
+                var cx = cell.x + cell.width / 2, cy = cell.y + cell.height / 2;
+                cell.width = cell.width * (1 / 0.9);
+                cell.height = cell.height * (1 / 0.9);
+                cell.x = cx - cell.width / 2;
+                cell.y = cy - cell.height / 2;
+                if (cell.imageId) {
+                    var img = imageManager.get(cell.imageId);
+                    if (img) {
+                        var fit = computeDefaultFit(cell, img.naturalWidth, img.naturalHeight, collage.dpi);
+                        cell.imageScale = fit.imageScale;
+                        cell.imageOffsetX = fit.imageOffsetX;
+                        cell.imageOffsetY = fit.imageOffsetY;
+                    }
+                }
+                dirty = true; updateCellInfo(); return;
+            }
+        });
+
+        // Settings dialog
+        var settingsModal = document.getElementById('settings-modal');
+        document.getElementById('settings-btn').addEventListener('click', function() {
+            settingsModal.classList.add('visible');
+        });
+        // Frame settings trigger redraw
+        ['setting-frame-width', 'setting-frame-color', 'setting-frame-image'].forEach(function(id) {
+            var el = document.getElementById(id);
+            el.addEventListener('input', function() { dirty = true; });
+            el.addEventListener('change', function() { dirty = true; });
+        });
+
+        document.getElementById('settings-close-btn').addEventListener('click', function() {
+            settingsModal.classList.remove('visible');
+        });
+        settingsModal.addEventListener('click', function(e) {
+            if (e.target === settingsModal) settingsModal.classList.remove('visible');
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && settingsModal.classList.contains('visible')) {
+                settingsModal.classList.remove('visible');
             }
         });
 
@@ -1306,7 +2145,8 @@
         document.addEventListener('dragenter', function(e) {
             e.preventDefault();
             dragCounter++;
-            if (hasImageFiles(e)) dropOverlay.classList.add('visible');
+            // Only show full-window overlay when no layout exists
+            if (!collage && hasImageFiles(e)) dropOverlay.classList.add('visible');
         });
         document.addEventListener('dragleave', function(e) {
             e.preventDefault();
@@ -1318,6 +2158,8 @@
             e.dataTransfer.dropEffect = 'copy';
         });
         document.addEventListener('drop', function(e) {
+            // Only handle at document level if the canvas didn't handle it
+            // (canvas drop handler calls stopPropagation)
             e.preventDefault();
             dragCounter = 0;
             dropOverlay.classList.remove('visible');
@@ -1437,6 +2279,7 @@
         assignImages();
         interaction = new InteractionManager(collage, imageManager, function() { dirty = true; });
         randomizeBtn.disabled = false;
+        refreshBtn.disabled = false;
         resizeModeBtn.disabled = false;
         exportBtn.disabled = false;
         dirty = true;
@@ -1445,6 +2288,30 @@
         renderFileList();
         renderOverlayList();
         updateStatus('Layout: ' + n + ' photos on ' + pw + '"x' + ph + '" at ' + dpi + ' DPI');
+    }
+
+    function onRefresh() {
+        if (!collage) return;
+        var enabledIds = imageManager.getEnabledIds();
+
+        // Remove cells whose image was deleted or unchecked
+        collage.cells = collage.cells.filter(function(cell) {
+            if (!cell.imageId) return true; // empty cell stays
+            var img = imageManager.get(cell.imageId);
+            return img && enabledIds.indexOf(cell.imageId) >= 0;
+        });
+
+        // Don't refit — preserve user's zoom/pan adjustments
+
+        interaction.selectedCellId = null;
+        selectedOverlayId = null;
+        interaction.rebuildEdges();
+        dirty = true;
+        renderFileList();
+        renderOverlayList();
+        updateOverlayProps();
+        updateCellInfo();
+        updateStatus('Refreshed — ' + collage.cells.length + ' cells remain.');
     }
 
     function assignImages() {
@@ -1477,22 +2344,63 @@
         }
 
         countEl.textContent = '(' + imageManager.enabledCount() + '/' + all.length + ')';
-        var html = '';
+
+        // Build ordered list: cells in draw order, then unassigned images
+        var orderedItems = []; // { imgId, cellIndex (or -1), img }
+        var assignedIds = new Set();
+
+        if (collage) {
+            for (var ci = 0; ci < collage.cells.length; ci++) {
+                var cell = collage.cells[ci];
+                if (cell.imageId) {
+                    var img = imageManager.get(cell.imageId);
+                    if (img) {
+                        orderedItems.push({ imgId: cell.imageId, cellIndex: ci, img: img });
+                        assignedIds.add(cell.imageId);
+                    }
+                }
+            }
+        }
+        // Add unassigned images at the end
         for (var i = 0; i < all.length; i++) {
-            var img = all[i];
+            if (!assignedIds.has(all[i].id)) {
+                orderedItems.push({ imgId: all[i].id, cellIndex: -1, img: all[i] });
+            }
+        }
+
+        // Determine which image is selected (via cell selection)
+        var selectedImgId = null;
+        if (interaction && interaction.selectedCellId !== null && collage) {
+            var selCell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+            if (selCell) selectedImgId = selCell.imageId;
+        }
+
+        var html = '';
+        for (var i = 0; i < orderedItems.length; i++) {
+            var item = orderedItems[i];
+            var img = item.img;
             var checkedAttr = img.enabled ? ' checked' : '';
             var dimClass = img.enabled ? '' : ' file-item-disabled';
-            html += '<label class="file-item' + dimClass + '" data-id="' + img.id + '">' +
+            var selClass = (img.id === selectedImgId || img.id === selectedUnassignedImgId) ? ' file-item-selected' : '';
+            var reorderBtns = '';
+            if (item.cellIndex >= 0) {
+                reorderBtns = '<button class="ov-reorder-btn cell-order-up" data-cell-idx="' + item.cellIndex + '" title="Bring forward">▲</button>' +
+                    '<button class="ov-reorder-btn cell-order-down" data-cell-idx="' + item.cellIndex + '" title="Send back">▼</button>';
+            }
+            var orderLabel = item.cellIndex >= 0 ? '<span style="color:#666;font-size:10px;min-width:14px;">' + (item.cellIndex + 1) + '</span>' : '';
+            html += '<div class="file-item' + dimClass + selClass + '" data-id="' + img.id + '" data-cell-idx="' + item.cellIndex + '">' +
+                orderLabel +
+                reorderBtns +
                 '<input type="checkbox" class="file-checkbox" data-img-id="' + img.id + '"' + checkedAttr + '>' +
                 '<canvas class="file-thumb" width="36" height="36" data-thumb-id="' + img.id + '"></canvas>' +
                 '<span class="file-name" title="' + img.fileName + '">' + img.fileName + '</span>' +
-                '</label>';
+                '</div>';
         }
         list.innerHTML = html;
 
         // Draw thumbnails into the small canvases
-        for (var i = 0; i < all.length; i++) {
-            var img = all[i];
+        for (var i = 0; i < orderedItems.length; i++) {
+            var img = orderedItems[i].img;
             var thumbCanvas = list.querySelector('[data-thumb-id="' + img.id + '"]');
             if (thumbCanvas) {
                 var tctx = thumbCanvas.getContext('2d');
@@ -1512,6 +2420,96 @@
         for (var i = 0; i < checkboxes.length; i++) {
             checkboxes[i].addEventListener('change', onFileToggle);
         }
+
+        // Click file item to select its cell (or show properties for unassigned)
+        var fileItems = list.querySelectorAll('.file-item');
+        for (var i = 0; i < fileItems.length; i++) {
+            fileItems[i].addEventListener('click', function(e) {
+                // Don't trigger on checkbox or button clicks
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                var imgId = this.getAttribute('data-id');
+                var cellIdx = parseInt(this.getAttribute('data-cell-idx'));
+
+                if (cellIdx >= 0 && collage && interaction) {
+                    // Select the cell and flash green
+                    var cell = collage.cells[cellIdx];
+                    if (cell) {
+                        interaction.selectedCellId = cell.id;
+                        selectedOverlayId = null;
+                        selectedUnassignedImgId = null;
+                        if (tabFlashTimer) clearTimeout(tabFlashTimer);
+                        tabFlashCellId = cell.id;
+                        tabFlashTimer = setTimeout(function() {
+                            tabFlashCellId = null;
+                            dirty = true;
+                        }, 3000);
+                        dirty = true;
+                        updateCellInfo();
+                        renderFileList();
+                    }
+                } else {
+                    // Unassigned image — show its properties in the panel
+                    var img = imageManager.get(imgId);
+                    if (img) {
+                        if (interaction) interaction.selectedCellId = null;
+                        selectedOverlayId = null;
+                        selectedUnassignedImgId = imgId;
+                        imagePropsSection.style.display = '';
+                        propFilename.textContent = img.fileName || '-';
+                        propDate.textContent = img.date || '-';
+                        propTime.textContent = img.time || '-';
+                        propResolution.textContent = img.naturalWidth + ' x ' + img.naturalHeight + ' px';
+                        propCellsize.textContent = 'Not assigned';
+                        document.getElementById('cell-lock-row').style.display = 'none';
+                        cellInfo.innerHTML = '<p><strong>Unassigned image</strong></p>';
+                        dirty = true;
+                        renderFileList();
+                    }
+                }
+            });
+        }
+
+        // Attach reorder button listeners
+        var upBtns = list.querySelectorAll('.cell-order-up');
+        var downBtns = list.querySelectorAll('.cell-order-down');
+        for (var i = 0; i < upBtns.length; i++) {
+            upBtns[i].addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(this.getAttribute('data-cell-idx'));
+                if (idx > 0 && collage) {
+                    var tmp = collage.cells[idx];
+                    collage.cells[idx] = collage.cells[idx - 1];
+                    collage.cells[idx - 1] = tmp;
+                    dirty = true;
+                    renderFileList();
+                }
+            });
+        }
+        for (var i = 0; i < downBtns.length; i++) {
+            downBtns[i].addEventListener('click', function(e) {
+                e.stopPropagation();
+                var idx = parseInt(this.getAttribute('data-cell-idx'));
+                if (collage && idx < collage.cells.length - 1) {
+                    var tmp = collage.cells[idx];
+                    collage.cells[idx] = collage.cells[idx + 1];
+                    collage.cells[idx + 1] = tmp;
+                    dirty = true;
+                    renderFileList();
+                }
+            });
+        }
+
+        // Update frame image dropdown
+        var frameSel = document.getElementById('setting-frame-image');
+        var frameVal = frameSel.value;
+        frameSel.innerHTML = '<option value="">(none — solid color)</option>';
+        for (var i = 0; i < all.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = all[i].id;
+            opt.textContent = all[i].fileName;
+            frameSel.appendChild(opt);
+        }
+        frameSel.value = frameVal;
     }
 
     function onFileToggle(e) {
@@ -1523,26 +2521,115 @@
     }
 
     function onRemovePhoto() {
-        if (!interaction || interaction.selectedCellId === null) return;
-        var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
-        if (!cell || !cell.imageId) return;
+        // Remove assigned image (from cell)
+        if (interaction && interaction.selectedCellId !== null) {
+            var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
+            if (cell && cell.imageId) {
+                var imgId = cell.imageId;
+                cell.imageId = null; cell.imageOffsetX = 0; cell.imageOffsetY = 0; cell.imageScale = 1;
+                imageManager.remove(imgId);
+                interaction.selectedCellId = null;
+                dirty = true;
+                renderFileList();
+                updateCellInfo();
+                updateStatus('Photo removed. ' + imageManager.enabledCount() + ' photos remain.');
+                return;
+            }
+        }
+        // Remove unassigned image
+        if (selectedUnassignedImgId) {
+            imageManager.remove(selectedUnassignedImgId);
+            selectedUnassignedImgId = null;
+            imagePropsSection.style.display = 'none';
+            cellInfo.innerHTML = '<p class="hint">Click a cell or press <kbd>Tab</kbd> to cycle.</p>';
+            dirty = true;
+            renderFileList();
+            updateStatus('Photo removed. ' + imageManager.count() + ' photos remain.');
+        }
+    }
 
-        var imgId = cell.imageId;
-        // Remove from cell
-        cell.imageId = null; cell.imageOffsetX = 0; cell.imageOffsetY = 0; cell.imageScale = 1;
-        // Remove from manager
-        imageManager.remove(imgId);
-        // Clear selection
-        interaction.selectedCellId = null;
+    function onRaiseToTop() {
+        if (!interaction || interaction.selectedCellId === null || !collage) return;
+        var idx = collage.cells.findIndex(function(c) { return c.id === interaction.selectedCellId; });
+        if (idx < 0) return;
+        // Move to index 0 (top of list = drawn on top)
+        var cell = collage.cells.splice(idx, 1)[0];
+        collage.cells.unshift(cell);
         dirty = true;
         renderFileList();
         updateCellInfo();
-        updateStatus('Photo removed. ' + imageManager.enabledCount() + ' photos remain. Click Generate to rebuild layout.');
+        onRefresh();
+        updateStatus('Raised to top.');
+    }
+
+    function onAddToLayout() {
+        if (!collage) return;
+        // Find the image to add — either unassigned selected, or assigned cell's image
+        var imgId = null;
+        if (selectedUnassignedImgId) {
+            imgId = selectedUnassignedImgId;
+        } else if (interaction && interaction.selectedCellId !== null) {
+            // Already in layout — nothing to do
+            updateStatus('Image is already in the layout.');
+            return;
+        }
+        if (!imgId) return;
+        var img = imageManager.get(imgId);
+        if (!img) return;
+
+        // Make sure it's enabled
+        imageManager.setEnabled(imgId, true);
+
+        // Find whitespace to place it, or create a default cell
+        var pm = collage.perimeterMargin;
+        var gap = collage.gutterMargin;
+        var cx = collage.paperWidth / 2, cy = collage.paperHeight / 2;
+        var wsRect = findWhitespaceRect(cx, cy);
+        var newCell;
+        if (wsRect && wsRect.width >= MIN_CELL_SIZE && wsRect.height >= MIN_CELL_SIZE) {
+            newCell = createCell(wsRect.x, wsRect.y, wsRect.width, wsRect.height);
+        } else {
+            // No whitespace — place a 2x2" cell centered
+            var w = 2, h = 2;
+            newCell = createCell((collage.paperWidth - w) / 2, (collage.paperHeight - h) / 2, w, h);
+        }
+        newCell.imageId = imgId;
+        collage.cells.unshift(newCell); // add at top of draw order
+        interaction.refitCell(newCell);
+        interaction.selectedCellId = newCell.id;
+        interaction.rebuildEdges();
+        selectedUnassignedImgId = null;
+
+        // Flash green
+        if (tabFlashTimer) clearTimeout(tabFlashTimer);
+        tabFlashCellId = newCell.id;
+        tabFlashTimer = setTimeout(function() { tabFlashCellId = null; dirty = true; }, 3000);
+
+        dirty = true;
+        renderFileList();
+        updateCellInfo();
+        updateStatus('Added to layout. Drag corners to resize.');
+    }
+
+    function onSendToBottom() {
+        if (!interaction || interaction.selectedCellId === null || !collage) return;
+        var idx = collage.cells.findIndex(function(c) { return c.id === interaction.selectedCellId; });
+        if (idx < 0) return;
+        var cell = collage.cells.splice(idx, 1)[0];
+        collage.cells.push(cell);
+        dirty = true;
+        renderFileList();
+        updateCellInfo();
+        onRefresh();
+        updateStatus('Sent to back.');
     }
 
     // ========================================================================
     // Drop-to-replace on canvas
     // ========================================================================
+    // Track whitespace drop rect for rendering
+    var dropWhitespaceRect = null; // {x,y,width,height} in inches, or null
+
     function onCanvasDragOver(e) {
         if (!interaction || !collage) return;
         e.preventDefault();
@@ -1550,17 +2637,94 @@
         e.dataTransfer.dropEffect = 'copy';
         var c = getCanvasCoords(e);
         var cell = interaction.hitTestCell(c[0], c[1]);
-        var newTarget = (cell && cell.imageId) ? cell.id : null;
-        if (newTarget !== dropTargetCellId) {
+        var newTarget = cell ? cell.id : null;
+        var newZone = null;
+        var newWhitespace = null;
+        if (cell) {
+            // Determine drop zone based on cursor position within cell
+            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+            var relX = (ix - cell.x) / cell.width;  // 0..1
+            var relY = (iy - cell.y) / cell.height;  // 0..1
+            var edgeThreshold = 0.25;
+            if (relY < edgeThreshold) newZone = 'above';
+            else if (relY > 1 - edgeThreshold) newZone = 'below';
+            else if (relX < edgeThreshold) newZone = 'left';
+            else if (relX > 1 - edgeThreshold) newZone = 'right';
+            else newZone = 'replace';
+        } else {
+            // Check if we're in usable whitespace (not in margin)
+            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+            var pm = collage.perimeterMargin;
+            if (ix >= pm && ix <= collage.paperWidth - pm &&
+                iy >= pm && iy <= collage.paperHeight - pm) {
+                var wsRect = findWhitespaceRect(ix, iy);
+                if (wsRect && wsRect.width >= MIN_CELL_SIZE && wsRect.height >= MIN_CELL_SIZE) {
+                    newWhitespace = wsRect;
+                    newZone = 'whitespace';
+                }
+            }
+        }
+        if (newTarget !== dropTargetCellId || newZone !== dropZone) {
             dropTargetCellId = newTarget;
+            dropZone = newZone;
+            dropWhitespaceRect = newWhitespace;
             dirty = true;
         }
     }
 
+    // Find the largest rectangle of whitespace around point (ix, iy)
+    // that doesn't overlap any existing cell. Returns 80% fill rect.
+    function findWhitespaceRect(ix, iy) {
+        var pm = collage.perimeterMargin;
+        var gap = collage.gutterMargin;
+        // Start with the full usable area
+        var left = pm, right = collage.paperWidth - pm;
+        var top = pm, bottom = collage.paperHeight - pm;
+
+        // Constrain by each existing cell
+        for (var i = 0; i < collage.cells.length; i++) {
+            var c = collage.cells[i];
+            var cx1 = c.x, cy1 = c.y, cx2 = c.x + c.width, cy2 = c.y + c.height;
+
+            // Only constrain if cell is in the way of the cursor on the relevant axis
+            // Cell is to the left of cursor
+            if (cx2 <= ix && cy1 < bottom && cy2 > top) {
+                left = Math.max(left, cx2 + gap);
+            }
+            // Cell is to the right
+            if (cx1 >= ix && cy1 < bottom && cy2 > top) {
+                right = Math.min(right, cx1 - gap);
+            }
+            // Cell is above
+            if (cy2 <= iy && cx1 < right && cx2 > left) {
+                top = Math.max(top, cy2 + gap);
+            }
+            // Cell is below
+            if (cy1 >= iy && cx1 < right && cx2 > left) {
+                bottom = Math.min(bottom, cy1 - gap);
+            }
+        }
+
+        var w = right - left;
+        var h = bottom - top;
+        if (w < MIN_CELL_SIZE || h < MIN_CELL_SIZE) return null;
+
+        // Return 80% fill, centered in the whitespace
+        var fillW = w * 0.8, fillH = h * 0.8;
+        return {
+            x: left + (w - fillW) / 2,
+            y: top + (h - fillH) / 2,
+            width: fillW,
+            height: fillH
+        };
+    }
+
     function onCanvasDragLeave(e) {
         e.stopPropagation();
-        if (dropTargetCellId !== null) {
+        if (dropTargetCellId !== null || dropZone !== null || dropWhitespaceRect !== null) {
             dropTargetCellId = null;
+            dropZone = null;
+            dropWhitespaceRect = null;
             dirty = true;
         }
     }
@@ -1570,37 +2734,138 @@
         e.stopPropagation();
         document.getElementById('drop-overlay').classList.remove('visible');
         var targetId = dropTargetCellId;
+        var zone = dropZone;
+        var wsRect = dropWhitespaceRect;
         dropTargetCellId = null;
+        dropZone = null;
+        dropWhitespaceRect = null;
         dirty = true;
 
         var files = filterImageFiles(e.dataTransfer.files);
         if (files.length === 0) return;
 
-        if (targetId !== null && collage) {
+        // Drop in whitespace — create new cell
+        if (zone === 'whitespace' && wsRect && collage) {
+            var ids = await imageManager.loadFiles([files[0]]);
+            var newId = ids[0];
+            var newCell = createCell(wsRect.x, wsRect.y, wsRect.width, wsRect.height);
+            newCell.imageId = newId;
+            collage.cells.push(newCell);
+            interaction.refitCell(newCell);
+            interaction.rebuildEdges();
+            dirty = true;
+            renderFileList();
+            updateCellInfo();
+            updateStatus('Photo placed in open area.');
+            return;
+        }
+
+        if (targetId !== null && collage && zone) {
             var cell = collage.cells.find(function(c) { return c.id === targetId; });
-            if (cell && cell.imageId) {
-                if (confirm('Replace this photo?')) {
-                    var ids = await imageManager.loadFiles([files[0]]);
-                    var newId = ids[0];
+            if (cell) {
+                var ids = await imageManager.loadFiles([files[0]]);
+                var newId = ids[0];
+
+                if (zone === 'replace') {
+                    // Replace the image in this cell
                     cell.imageId = newId;
                     interaction.refitCell(cell);
-                    dirty = true;
-                    renderFileList();
-                    updateCellInfo();
-                    updateStatus('Photo replaced.');
-                    return;
+                } else {
+                    // Insert: split cell and push neighbors
+                    insertImageAtCell(cell, newId, zone);
                 }
+
+                dirty = true;
+                renderFileList();
+                if (interaction) {
+                    interaction.rebuildEdges();
+                }
+                updateCellInfo();
+                updateStatus(zone === 'replace' ? 'Photo replaced.' : 'Photo inserted ' + zone + '.');
+                return;
             }
         }
         // Fall through: add to pool
         loadDroppedFiles(files);
     }
 
+    function insertImageAtCell(targetCell, newImageId, direction) {
+        // Split the target cell in half along the insertion axis,
+        // and push adjacent cells to make room
+        var gap = collage.gutterMargin;
+        var hg = gap / 2;
+        var isHoriz = (direction === 'left' || direction === 'right');
+        var isBefore = (direction === 'left' || direction === 'above');
+
+        if (isHoriz) {
+            // Split width in half
+            var halfW = (targetCell.width - gap) / 2;
+            if (halfW < MIN_CELL_SIZE) halfW = targetCell.width / 2;
+
+            var newCell = createCell(0, targetCell.y, halfW, targetCell.height);
+            newCell.imageId = newImageId;
+
+            if (isBefore) {
+                // New cell goes left, target shrinks from left
+                newCell.x = targetCell.x;
+                targetCell.x = targetCell.x + halfW + gap;
+                targetCell.width = halfW;
+            } else {
+                // New cell goes right, target shrinks from right
+                newCell.x = targetCell.x + halfW + gap;
+                targetCell.width = halfW;
+            }
+
+            collage.cells.push(newCell);
+            interaction.refitCell(newCell);
+            interaction.refitCell(targetCell);
+        } else {
+            // Split height in half
+            var halfH = (targetCell.height - gap) / 2;
+            if (halfH < MIN_CELL_SIZE) halfH = targetCell.height / 2;
+
+            var newCell = createCell(targetCell.x, 0, targetCell.width, halfH);
+            newCell.imageId = newImageId;
+
+            if (isBefore) {
+                // New cell goes above, target shrinks from top
+                newCell.y = targetCell.y;
+                targetCell.y = targetCell.y + halfH + gap;
+                targetCell.height = halfH;
+            } else {
+                // New cell goes below, target shrinks from bottom
+                newCell.y = targetCell.y + halfH + gap;
+                targetCell.height = halfH;
+            }
+
+            collage.cells.push(newCell);
+            interaction.refitCell(newCell);
+            interaction.refitCell(targetCell);
+        }
+    }
+
     // ========================================================================
     // Clipboard paste -> overlay
     // ========================================================================
     async function onPaste(e) {
-        if (!collage) return;
+        // If no layout exists yet, create an empty one so overlays can be pasted
+        if (!collage) {
+            var pw = parseFloat(document.getElementById('paper-width').value) || 11;
+            var ph = parseFloat(document.getElementById('paper-height').value) || 14;
+            var paperSelect = document.getElementById('paper-size');
+            if (paperSelect.value !== 'custom') {
+                var parts = paperSelect.value.split('x');
+                pw = parseFloat(parts[0]); ph = parseFloat(parts[1]);
+            }
+            var dpi = parseInt(document.getElementById('dpi').value) || 300;
+            var pm = parseFloat(document.getElementById('perimeter-margin').value) || 0.25;
+            var gm = parseFloat(document.getElementById('gutter-margin').value) || 0.125;
+            collage = createCollage(pw, ph, dpi, pm, gm);
+            collage.cells = [];
+            interaction = new InteractionManager(collage, imageManager, function() { dirty = true; updateCellInfo(); });
+            interaction.setDisplayInfo(displayScale, collage.dpi);
+            dirty = true;
+        }
         // Don't intercept paste when user is actively typing in a text input
         var ae = document.activeElement;
         if (ae && (ae.tagName === 'TEXTAREA' ||
@@ -1681,7 +2946,7 @@
         }
         list.innerHTML = html;
 
-        // Click to select
+        // Click to select with green flash
         var items = list.querySelectorAll('.overlay-item');
         for (var i = 0; i < items.length; i++) {
             items[i].addEventListener('click', function(e) {
@@ -1689,10 +2954,19 @@
                 var ovId = parseInt(this.getAttribute('data-ov-id'));
                 selectedOverlayId = ovId;
                 if (interaction) interaction.selectedCellId = null;
+                // Flash green
+                if (tabFlashTimer) clearTimeout(tabFlashTimer);
+                tabFlashCellId = null;
+                tabFlashOvId = ovId;
+                tabFlashTimer = setTimeout(function() {
+                    tabFlashOvId = null;
+                    dirty = true;
+                }, 3000);
                 dirty = true;
                 renderOverlayList();
                 updateOverlayProps();
                 updateCellInfo();
+                renderFileList();
             });
         }
 
@@ -1721,6 +2995,15 @@
         if (!ov) { section.style.display = 'none'; return; }
 
         section.style.display = '';
+        var img = imageManager.get(ov.imageId);
+        var infoEl = document.getElementById('ov-image-info');
+        if (img) {
+            infoEl.innerHTML = '<strong>' + img.fileName + '</strong><br>' +
+                img.naturalWidth + ' × ' + img.naturalHeight + ' px';
+        } else {
+            infoEl.innerHTML = '<em>No image data</em>';
+        }
+        document.getElementById('ov-locked').checked = ov.locked;
         document.getElementById('ov-x').value = ov.x.toFixed(3);
         document.getElementById('ov-y').value = ov.y.toFixed(3);
         document.getElementById('ov-w').value = ov.width.toFixed(3);
@@ -1735,6 +3018,7 @@
         if (selectedOverlayId === null) return;
         var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
         if (!ov) return;
+        ov.locked = document.getElementById('ov-locked').checked;
         ov.x = parseFloat(document.getElementById('ov-x').value) || 0;
         ov.y = parseFloat(document.getElementById('ov-y').value) || 0;
         ov.width = Math.max(0.25, parseFloat(document.getElementById('ov-w').value) || 0.25);
@@ -1798,7 +3082,14 @@
 
     function getCanvasCoords(e) {
         var r = canvas.getBoundingClientRect();
-        return [e.clientX - r.left, e.clientY - r.top];
+        var x = e.clientX - r.left;
+        var y = e.clientY - r.top;
+        // Adjust for frame offset and content scaling
+        if (frameOffsetPx > 0) {
+            x = (x - frameOffsetPx) / frameContentScale;
+            y = (y - frameOffsetPx) / frameContentScale;
+        }
+        return [x, y];
     }
 
     function onCanvasMouseDown(e) {
@@ -1866,10 +3157,19 @@
         updateOverlayProps();
         renderOverlayList();
 
+        // Clear unassigned selection when a cell is selected
+        if (interaction && interaction.selectedCellId !== null) {
+            selectedUnassignedImgId = null;
+        }
+
+        var cellLockRow = document.getElementById('cell-lock-row');
+        var cellLockedCb = document.getElementById('cell-locked');
         if (!interaction || interaction.selectedCellId === null) {
-            cellInfo.innerHTML = '<p class="hint">Click a cell to select it.</p>';
+            // Don't overwrite if showing unassigned image properties
+            if (selectedUnassignedImgId) return;
+            cellInfo.innerHTML = '<p class="hint">Click a cell or press <kbd>Tab</kbd> to cycle.</p>';
             imagePropsSection.style.display = 'none';
-            cropSection.style.display = 'none';
+            cellLockRow.style.display = 'none';
             return;
         }
         var cell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
@@ -1877,10 +3177,13 @@
 
         var w = cell.width.toFixed(2), h = cell.height.toFixed(2);
         cellInfo.innerHTML = '<p><strong>Cell ' + cell.id + '</strong>: ' + w + '" &times; ' + h + '"</p>' +
-            '<p class="hint">Drag to pan &middot; Scroll to zoom &middot; Shift+drag to swap</p>';
+            '<p class="hint">Drag to pan &middot; Scroll to zoom &middot; Hold 1s to move</p>';
+        cellLockRow.style.display = '';
+        cellLockedCb.checked = cell.locked;
 
         if (cell.imageId) {
             var img = imageManager.get(cell.imageId);
+            if (!img) { imagePropsSection.style.display = 'none'; return; }
             imagePropsSection.style.display = '';
             propFilename.textContent = img.fileName || '-';
             propDate.textContent = img.date || '-';
@@ -1889,13 +3192,11 @@
             propCellsize.textContent = w + '" x ' + h + '" (' +
                 Math.round(cell.width * collage.dpi) + ' x ' + Math.round(cell.height * collage.dpi) + ' px)';
 
-            cropSection.style.display = '';
             var z = interaction.getZoomPercent();
             zoomInput.value = z;
             scaleSlider.value = Math.round(((z - 100) / 400) * 100);
         } else {
             imagePropsSection.style.display = 'none';
-            cropSection.style.display = 'none';
         }
     }
 
@@ -1932,9 +3233,22 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    function updateLayoutScaleLabel() {
+        var pct = parseInt(document.getElementById('layout-scale').value);
+        var label = document.getElementById('layout-scale-val');
+        if (collage) {
+            var sw = (collage.paperWidth * pct / 100).toFixed(1);
+            var sh = (collage.paperHeight * pct / 100).toFixed(1);
+            label.textContent = pct + '% ' + sw + '×' + sh + '"';
+        } else {
+            label.textContent = pct + '%';
+        }
+    }
+
     function updateStatus(msg) { statusBar.textContent = msg; }
 
     document.addEventListener('DOMContentLoaded', init);
     </script>
+<div style="position:fixed;bottom:2px;right:8px;font-size:10px;color:#e0e0e0;pointer-events:none;">This page created at 2026-03-22 01:45 EST</div>
 </body>
 </html>
