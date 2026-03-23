@@ -8,45 +8,45 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <label class="file-label" for="file-input">Load Photos</label>
-        <input type="file" id="file-input" multiple accept="image/*">
-        <div class="separator"></div>
-        <button id="generate-btn" class="primary" disabled>Generate</button>
-        <button id="randomize-btn" disabled>Randomize</button>
-        <button id="refresh-btn" disabled>Refresh</button>
-        <button id="resize-mode-btn" disabled>Resize Cells</button>
-        <div class="separator"></div>
-        <div style="display:flex;align-items:center;gap:2px;font-size:11px;">
-            <span style="color:#a0a0c0;margin-right:2px;">Edit:</span>
-            <button id="mode-cells-btn" class="active-toggle" style="padding:3px 8px;font-size:11px;">Cells</button>
-            <button id="mode-overlays-btn" style="padding:3px 8px;font-size:11px;">Overlays</button>
-            <button id="mode-borders-btn" style="padding:3px 8px;font-size:11px;">Borders</button>
-            <span style="color:#555;margin-left:4px;">Show:</span>
-            <button id="vis-cells-btn" title="Toggle cells visibility" style="padding:3px 6px;font-size:11px;background:#4CAF50;color:#fff;border-color:#4CAF50;">C</button>
-            <button id="vis-overlays-btn" title="Toggle overlays visibility" style="padding:3px 6px;font-size:11px;background:#2196F3;color:#fff;border-color:#2196F3;">O</button>
-            <button id="vis-borders-btn" title="Toggle borders visibility" style="padding:3px 6px;font-size:11px;background:#FF9800;color:#fff;border-color:#FF9800;">B</button>
-        </div>
-        <div class="separator"></div>
-        <label style="font-size:12px;color:#a0a0c0;display:flex;align-items:center;gap:4px;">
-            Scale
-            <input type="range" id="layout-scale" min="25" max="100" value="100" style="width:70px;accent-color:#e94560;">
-            <span id="layout-scale-val" style="min-width:50px;font-size:11px;color:#e0e0e0;">100%</span>
-        </label>
-        <div class="separator"></div>
-        <button id="save-btn">Save</button>
-        <button id="load-btn">Load</button>
+    <!-- Menu Bar -->
+    <div class="toolbar" style="gap:4px;">
+        <span style="font-size:14px;font-weight:600;color:#e0e0e0;margin-right:8px;">Collage</span>
+        <input type="file" id="file-input" multiple accept="image/*" style="display:none">
         <input type="file" id="load-input" accept=".collage,.json,.zip" style="display:none">
-        <button id="export-btn" disabled>Export</button>
-        <button id="share-btn" disabled>Share</button>
-        <div class="separator"></div>
-        <button id="identify-btn" disabled>Identify</button>
-        <button id="settings-btn">Settings</button>
-        <div style="position:relative;display:inline-block;">
-            <button id="tools-btn">Tools ▾</button>
-            <div id="tools-menu" style="display:none;position:absolute;top:100%;left:0;z-index:100;background:#16213e;border:1px solid #0f3460;border-radius:4px;min-width:180px;box-shadow:0 4px 12px rgba(0,0,0,0.4);margin-top:4px;">
-                <div id="tool-calendar" style="padding:8px 14px;cursor:pointer;font-size:13px;color:#e0e0e0;transition:background 0.15s;" onmouseover="this.style.background='#1a4a80'" onmouseout="this.style.background=''">Calendar Wizard...</div>
+
+        <div class="menu-dropdown">
+            <button class="menu-btn">File ▾</button>
+            <div class="menu-panel">
+                <div class="menu-item" id="menu-load-photos">Load Photos...</div>
+                <div class="menu-item" id="menu-load-project">Load Project...</div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" id="save-btn">Save Project</div>
+                <div class="menu-item" id="share-btn">Share Project...</div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" id="export-btn">Export JPEG</div>
+            </div>
+        </div>
+
+        <div class="menu-dropdown">
+            <button class="menu-btn">Layout ▾</button>
+            <div class="menu-panel">
+                <div class="menu-item" id="generate-btn">Generate Layout</div>
+                <div class="menu-item" id="randomize-btn">Randomize</div>
+                <div class="menu-item" id="refresh-btn">Refresh</div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" id="settings-btn">Page Settings...</div>
+                <div class="menu-item" id="tool-calendar">Calendar Wizard...</div>
+            </div>
+        </div>
+
+        <div class="menu-dropdown">
+            <button class="menu-btn">View ▾</button>
+            <div class="menu-panel">
+                <div class="menu-item menu-toggle" id="vis-cells-btn"><span class="menu-check">✓</span> Show Cells</div>
+                <div class="menu-item menu-toggle" id="vis-overlays-btn"><span class="menu-check">✓</span> Show Overlays</div>
+                <div class="menu-item menu-toggle" id="vis-borders-btn"><span class="menu-check">✓</span> Show Borders</div>
+                <div class="menu-divider"></div>
+                <div class="menu-item" id="identify-btn">Identify Elements</div>
             </div>
         </div>
     </div>
@@ -90,31 +90,10 @@
                 <label>Gap</label>
                 <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
             </div>
-            <div class="modal-section">
-                <h3>Frame / Matte</h3>
-                <div class="settings-row">
-                    <label>Width (in)</label>
-                    <input type="number" id="setting-frame-width" value="0" min="0" max="4" step="0.125">
-                </div>
-                <div class="settings-row">
-                    <label>Color</label>
-                    <input type="color" id="setting-frame-color" value="#ffffff">
-                </div>
-                <div class="settings-row">
-                    <label>Image</label>
-                    <select id="setting-frame-image">
-                        <option value="">(none — solid color)</option>
-                    </select>
-                </div>
-                <p class="modal-hint">Adds a matte/frame around the layout. Content scales to fit inside. Frame image fills the border area.</p>
-            </div>
-            <div class="modal-section">
-                <h3>Overlay</h3>
-                <div class="settings-row">
-                    <label>Edge trim</label>
-                    <input type="number" id="setting-edge-trim" value="0" min="0" max="10" step="1" style="width:50px;">
-                    <span>px — trims edges off pasted overlay images</span>
-                </div>
+            <div class="settings-row">
+                <label>Scale</label>
+                <input type="range" id="layout-scale" min="25" max="100" value="100" style="width:100px;accent-color:#e94560;">
+                <span id="layout-scale-val" style="font-size:11px;color:#e0e0e0;">100%</span>
             </div>
             <div class="modal-section">
                 <h3>Layout</h3>
@@ -123,20 +102,26 @@
                     <input type="checkbox" id="setting-equal-sizes" checked style="accent-color:#e94560;">
                     <span>Make all cells equal size</span>
                 </div>
-            </div>
-            <div class="modal-section">
-                <h3>Resize Behavior</h3>
                 <div class="settings-row">
                     <label>Stack resize</label>
                     <select id="setting-stack-resize">
-                        <option value="single">Selected overlay only</option>
+                        <option value="single">Selected element only</option>
                         <option value="row-col" selected>Entire row / column</option>
                     </select>
                 </div>
-                <p class="modal-hint">When growing/shrinking with +/&minus; keys:<br>
-                    <b>Row / column</b> — width changes push overlays in the same column; height changes push overlays in the same row.<br>
-                    <b>Selected only</b> — only the selected overlay changes.</p>
             </div>
+            <div class="modal-section">
+                <h3>Overlay</h3>
+                <div class="settings-row">
+                    <label>Edge trim</label>
+                    <input type="number" id="setting-edge-trim" value="0" min="0" max="10" step="1" style="width:50px;">
+                    <span>px — clip edges of pasted images</span>
+                </div>
+            </div>
+            <!-- Hidden elements for backwards compat -->
+            <input type="hidden" id="setting-frame-width" value="0">
+            <input type="hidden" id="setting-frame-color" value="#ffffff">
+            <select id="setting-frame-image" style="display:none;"><option value=""></option></select>
             <div class="modal-buttons">
                 <button id="settings-close-btn" class="primary">Done</button>
             </div>
@@ -145,201 +130,203 @@
 
     <!-- Sidebar -->
     <div class="sidebar">
-        <!-- Panel 1: Photos & Draw Order -->
+        <!-- Unified Object List (collapsible) -->
         <div class="section">
-            <h3>Photos <span id="photo-count" class="photo-count"></span></h3>
-            <div id="file-list" class="file-list">
-                <p class="hint">No photos loaded yet.</p>
-            </div>
-            <div id="file-drop-zone" class="file-drop-zone">
-                <span class="file-drop-text">+ Drop photos here to add</span>
+            <h3 class="section-toggle" data-target="objects-body">Objects <span id="photo-count" class="photo-count"></span> <span class="toggle-arrow">▾</span></h3>
+            <div id="objects-body">
+                <div style="display:flex;gap:2px;margin-bottom:4px;font-size:10px;">
+                    <span style="color:#666;">Filter:</span>
+                    <button id="filter-all-btn" class="mode-bar-btn active-toggle" style="padding:1px 6px;font-size:10px;">All</button>
+                    <button id="filter-cells-btn" class="mode-bar-btn" style="padding:1px 6px;font-size:10px;">Cells</button>
+                    <button id="filter-overlays-btn" class="mode-bar-btn" style="padding:1px 6px;font-size:10px;">Overlays</button>
+                    <button id="filter-borders-btn" class="mode-bar-btn" style="padding:1px 6px;font-size:10px;">Borders</button>
+                </div>
+                <div id="file-list" class="file-list">
+                    <p class="hint">No objects yet.</p>
+                </div>
+                <div id="file-drop-zone" class="file-drop-zone">
+                    <span class="file-drop-text">+ Drop photos here to add</span>
+                </div>
+                <div style="margin-top:4px;display:flex;gap:3px;">
+                    <button id="add-photo-btn" style="flex:1;font-size:11px;background:#4CAF50;border-color:#4CAF50;color:#fff;">+ Photo</button>
+                    <button id="enter-text-mode-btn" style="flex:1;font-size:11px;background:#2196F3;border-color:#2196F3;color:#fff;">+ Text</button>
+                    <button id="add-border-btn" style="flex:1;font-size:11px;background:#FF9800;border-color:#FF9800;color:#fff;">+ Border</button>
+                </div>
             </div>
         </div>
 
-        <!-- Panel 2: Selection & Properties -->
-        <div class="section">
-            <h3>Selected Cell</h3>
-            <div id="cell-info">
-                <p class="hint">Click a cell or press <kbd>Tab</kbd> to cycle.</p>
+        <!-- Text overlay editor (shown when active) -->
+        <div class="section" id="text-ov-editor" style="display:none;">
+            <h3 style="color:#4CAF50;">Text Overlay</h3>
+            <textarea id="text-ov-content" style="width:100%;min-height:50px;background:#0f3460;border:1px solid #1a1a4e;color:#e0e0e0;padding:6px;border-radius:3px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="Type your text here..."></textarea>
+            <div class="ov-prop-row" style="margin-top:4px;">
+                <label>Font</label>
+                <select id="text-ov-font" style="flex:1;">
+                    <option value="Arial">Arial</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Impact">Impact</option>
+                    <option value="Palatino">Palatino</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Trebuchet MS">Trebuchet</option>
+                    <option value="Comic Sans MS">Comic Sans</option>
+                    <option value="Courier New">Courier</option>
+                    <option value="Brush Script MT">Brush Script</option>
+                </select>
             </div>
-            <div id="cell-lock-row" class="ov-prop-row" style="display:none; margin-top:6px;">
-                <label>Fix position</label>
-                <input type="checkbox" id="cell-locked" style="accent-color:#e94560;">
+            <div class="ov-prop-row">
+                <label>Size</label>
+                <input type="number" id="text-ov-size" value="48" min="12" max="200" step="1" style="width:55px;">
+                <label style="min-width:auto;">Color</label>
+                <input type="color" id="text-ov-color" value="#000000">
             </div>
-        </div>
-
-        <div class="section" id="image-props-section" style="display:none;">
-            <h3>Image Properties</h3>
-            <table class="props-table">
-                <tr><td class="prop-label">File</td><td id="prop-filename">-</td></tr>
-                <tr><td class="prop-label">Date</td><td id="prop-date">-</td></tr>
-                <tr><td class="prop-label">Time</td><td id="prop-time">-</td></tr>
-                <tr><td class="prop-label">Resolution</td><td id="prop-resolution">-</td></tr>
-                <tr><td class="prop-label">Cell Size</td><td id="prop-cellsize">-</td></tr>
-            </table>
-            <div class="zoom-group" style="margin-top:6px;">
-                <label>Zoom</label>
-                <input type="range" id="scale-slider" min="0" max="100" value="0">
-                <input type="number" id="zoom-input" min="100" max="500" step="1" value="100" class="zoom-number">
-                <span class="zoom-pct">%</span>
+            <div class="ov-prop-row">
+                <label>Bold</label>
+                <input type="checkbox" id="text-ov-bold" checked style="accent-color:#e94560;">
+                <label style="min-width:auto;">Italic</label>
+                <input type="checkbox" id="text-ov-italic" style="accent-color:#e94560;">
             </div>
             <div style="margin-top:6px; display:flex; gap:4px;">
-                <button id="raise-top-btn" style="flex:1;">Raise to Top</button>
-                <button id="send-bottom-btn" style="flex:1;">Send to Back</button>
-            </div>
-            <div style="margin-top:4px; display:flex; gap:4px;">
-                <button id="reset-crop-btn" style="flex:1;">Reset Crop</button>
-                <button id="add-to-layout-btn" style="flex:1;">Add to Layout</button>
-            </div>
-            <div style="margin-top:4px;">
-                <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
+                <button id="create-text-ov-btn" style="flex:1; background:#4CAF50; border-color:#4CAF50; color:#fff;">Create Overlay</button>
+                <button id="cancel-text-ov-btn" style="flex:1;">Cancel</button>
             </div>
         </div>
 
-        <!-- Overlays -->
-        <div class="section" id="overlays-section" style="display:none;">
-            <h3>Overlays <span id="overlay-count" class="photo-count"></span></h3>
-            <div id="overlay-list" class="overlay-list"></div>
-            <p class="hint">Paste (<kbd>Ctrl+V</kbd>) to add overlay</p>
-            <div style="margin-top:6px;">
-                <button id="enter-text-mode-btn">+ Create Text Overlay</button>
-            </div>
-
-            <!-- Text overlay edit mode (hidden until activated) -->
-            <div id="text-ov-editor" style="display:none; margin-top:8px; border-top:1px solid #0f3460; padding-top:8px;">
-                <h3 style="font-size:12px;color:#4CAF50;margin-bottom:6px;">TEXT OVERLAY MODE</h3>
-                <textarea id="text-ov-content" style="width:100%;min-height:50px;background:#0f3460;border:1px solid #1a1a4e;color:#e0e0e0;padding:6px;border-radius:3px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="Type your text here..."></textarea>
-                <div class="ov-prop-row" style="margin-top:4px;">
-                    <label>Font</label>
-                    <select id="text-ov-font" style="flex:1;">
-                        <option value="Arial">Arial</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Impact">Impact</option>
-                        <option value="Palatino">Palatino</option>
-                        <option value="Verdana">Verdana</option>
-                        <option value="Trebuchet MS">Trebuchet</option>
-                        <option value="Comic Sans MS">Comic Sans</option>
-                        <option value="Courier New">Courier</option>
-                        <option value="Brush Script MT">Brush Script</option>
-                    </select>
+        <!-- Properties panel (collapsible) -->
+        <div class="section">
+            <h3 class="section-toggle" data-target="props-body">Properties <span class="toggle-arrow">▾</span></h3>
+            <div id="props-body">
+                <div id="props-type-label" style="font-size:11px;font-weight:600;margin-bottom:4px;display:none;">
+                    <span class="obj-type-badge" id="props-type-badge">—</span>
+                    <span id="props-type-text" style="color:#a0a0c0;margin-left:4px;"></span>
                 </div>
-                <div class="ov-prop-row">
-                    <label>Size (pt)</label>
-                    <input type="number" id="text-ov-size" value="48" min="12" max="200" step="1" style="width:55px;">
-                    <label style="min-width:auto;">Color</label>
-                    <input type="color" id="text-ov-color" value="#000000">
+                <div id="cell-info">
+                    <p class="hint">Select an object to view properties.</p>
                 </div>
-                <div class="ov-prop-row">
-                    <label>Bold</label>
-                    <input type="checkbox" id="text-ov-bold" checked style="accent-color:#e94560;">
-                    <label style="min-width:auto;">Italic</label>
-                    <input type="checkbox" id="text-ov-italic" style="accent-color:#e94560;">
+                <div id="cell-lock-row" class="ov-prop-row" style="display:none; margin-top:6px;">
+                    <label>Fix position</label>
+                    <input type="checkbox" id="cell-locked" style="accent-color:#e94560;">
                 </div>
-                <div style="margin-top:6px; display:flex; gap:4px;">
-                    <button id="create-text-ov-btn" style="flex:1; background:#4CAF50; border-color:#4CAF50; color:#fff;">Create Overlay</button>
-                    <button id="cancel-text-ov-btn" style="flex:1;">Cancel</button>
+
+                <div id="image-props-section" style="display:none;">
+                    <table class="props-table">
+                        <tr><td class="prop-label">File</td><td id="prop-filename">-</td></tr>
+                        <tr><td class="prop-label">Date</td><td id="prop-date">-</td></tr>
+                        <tr><td class="prop-label">Time</td><td id="prop-time">-</td></tr>
+                        <tr><td class="prop-label">Resolution</td><td id="prop-resolution">-</td></tr>
+                        <tr><td class="prop-label">Cell Size</td><td id="prop-cellsize">-</td></tr>
+                    </table>
+                    <div class="zoom-group" style="margin-top:6px;">
+                        <label>Zoom</label>
+                        <input type="range" id="scale-slider" min="0" max="100" value="0">
+                        <input type="number" id="zoom-input" min="100" max="500" step="1" value="100" class="zoom-number">
+                        <span class="zoom-pct">%</span>
+                    </div>
+                    <div style="margin-top:6px; display:flex; gap:4px;">
+                        <button id="raise-top-btn" style="flex:1;">Raise to Top</button>
+                        <button id="send-bottom-btn" style="flex:1;">Send to Back</button>
+                    </div>
+                    <div style="margin-top:4px; display:flex; gap:4px;">
+                        <button id="reset-crop-btn" style="flex:1;">Reset Crop</button>
+                        <button id="add-to-layout-btn" style="flex:1;">Add to Layout</button>
+                    </div>
+                    <div style="margin-top:4px;">
+                        <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
+                    </div>
+                </div>
+
+                <div id="overlay-props-section" style="display:none;">
+                    <div id="ov-image-info" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;"></div>
+                    <div class="ov-prop-row">
+                        <label>Fix position</label>
+                        <input type="checkbox" id="ov-locked" style="accent-color:#e94560;">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Position</label>
+                        <input type="number" id="ov-x" step="0.0625" min="0"> <span>x</span>
+                        <input type="number" id="ov-y" step="0.0625" min="0">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Size</label>
+                        <input type="number" id="ov-w" step="0.0625" min="0.25"> <span>x</span>
+                        <input type="number" id="ov-h" step="0.0625" min="0.25">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Mode</label>
+                        <select id="ov-mode">
+                            <option value="transparent">Transparent</option>
+                            <option value="filled">Filled</option>
+                        </select>
+                        <input type="color" id="ov-fill" value="#ffffff">
+                    </div>
+                    <div style="margin-top:8px; display:flex; gap:4px;">
+                        <button id="export-overlay-btn" style="flex:1;">Export PNG</button>
+                        <button id="delete-overlay-btn" class="btn-danger" style="flex:1;">Delete</button>
+                    </div>
+                </div>
+
+                <div id="border-props-section" style="display:none;">
+                    <div id="border-image-info" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;"></div>
+                    <div class="ov-prop-row">
+                        <label>Fix position</label>
+                        <input type="checkbox" id="border-locked" style="accent-color:#e94560;">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Position</label>
+                        <input type="number" id="border-x" step="0.0625" min="0"> <span>x</span>
+                        <input type="number" id="border-y" step="0.0625" min="0">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Size</label>
+                        <input type="number" id="border-w" step="0.0625" min="0.25"> <span>x</span>
+                        <input type="number" id="border-h" step="0.0625" min="0.25">
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Fill</label>
+                        <select id="border-mode">
+                            <option value="filled">Solid Color</option>
+                            <option value="image">Image File</option>
+                        </select>
+                    </div>
+                    <div class="ov-prop-row" id="border-color-row">
+                        <label>Color</label>
+                        <input type="color" id="border-fill" value="#ffffff">
+                        <label style="min-width:auto;">Opacity</label>
+                        <input type="range" id="border-opacity" min="0" max="100" value="100" style="width:60px;accent-color:#e94560;">
+                        <span id="border-opacity-val" style="font-size:10px;color:#666;">100%</span>
+                    </div>
+                    <div class="ov-prop-row" id="border-image-row" style="display:none;">
+                        <label>Image</label>
+                        <label class="file-label" for="border-image-input" style="padding:3px 8px;font-size:11px;">Choose...</label>
+                        <input type="file" id="border-image-input" accept="image/*" style="display:none;">
+                        <span id="border-image-name" style="font-size:10px;color:#a0a0c0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">None</span>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <button id="delete-border-btn" class="btn-danger">Delete Border</button>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="section" id="overlay-props-section" style="display:none;">
-            <h3>Overlay Properties</h3>
-            <div id="ov-image-info" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;"></div>
-            <div class="ov-prop-row">
-                <label>Fix position</label>
-                <input type="checkbox" id="ov-locked" style="accent-color:#e94560;">
-            </div>
-            <div class="ov-prop-row">
-                <label>Position</label>
-                <input type="number" id="ov-x" step="0.0625" min="0"> <span>x</span>
-                <input type="number" id="ov-y" step="0.0625" min="0">
-            </div>
-            <div class="ov-prop-row">
-                <label>Size</label>
-                <input type="number" id="ov-w" step="0.0625" min="0.25"> <span>x</span>
-                <input type="number" id="ov-h" step="0.0625" min="0.25">
-            </div>
-            <div class="ov-prop-row">
-                <label>Mode</label>
-                <select id="ov-mode">
-                    <option value="transparent">Transparent</option>
-                    <option value="filled">Filled</option>
-                </select>
-                <input type="color" id="ov-fill" value="#ffffff">
-            </div>
-            <div style="margin-top: 8px; display:flex; gap:4px;">
-                <button id="export-overlay-btn" style="flex:1;">Export Source PNG</button>
-                <button id="delete-overlay-btn" class="btn-danger" style="flex:1;">Delete</button>
-            </div>
-        </div>
-
-        <!-- Borders -->
-        <div class="section" id="borders-section" style="display:none;">
-            <h3 style="color:#FF9800;">Borders <span id="border-count" class="photo-count"></span></h3>
-            <div id="border-list" class="overlay-list"></div>
-            <p class="hint">Add border/matte elements for framing</p>
-            <div style="margin-top:6px;">
-                <button id="add-border-btn">+ Add Border Element</button>
-            </div>
-        </div>
-
-        <div class="section" id="border-props-section" style="display:none;">
-            <h3 style="color:#FF9800;">Border Properties</h3>
-            <div id="border-image-info" style="font-size:11px;color:#a0a0c0;margin-bottom:6px;"></div>
-            <div class="ov-prop-row">
-                <label>Fix position</label>
-                <input type="checkbox" id="border-locked" style="accent-color:#e94560;">
-            </div>
-            <div class="ov-prop-row">
-                <label>Position</label>
-                <input type="number" id="border-x" step="0.0625" min="0"> <span>x</span>
-                <input type="number" id="border-y" step="0.0625" min="0">
-            </div>
-            <div class="ov-prop-row">
-                <label>Size</label>
-                <input type="number" id="border-w" step="0.0625" min="0.25"> <span>x</span>
-                <input type="number" id="border-h" step="0.0625" min="0.25">
-            </div>
-            <div class="ov-prop-row">
-                <label>Mode</label>
-                <select id="border-mode">
-                    <option value="filled">Filled</option>
-                    <option value="transparent">Transparent</option>
-                </select>
-                <input type="color" id="border-fill" value="#ffffff">
-            </div>
-            <div style="margin-top: 8px; display:flex; gap:4px;">
-                <button id="delete-border-btn" class="btn-danger" style="flex:1;">Delete</button>
-            </div>
-        </div>
-
-        <!-- Panel 3: Mode & Shortcuts -->
-        <div class="section" id="mode-indicator">
-            <div id="mode-badge" class="mode-badge mode-normal">LAYOUT MODE</div>
-            <p class="hint" id="mode-hint">Double-click margin to enter resize mode</p>
-        </div>
-
-        <div class="section instructions">
-            <h3>Shortcuts</h3>
-            <p><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd> — cycle cells</p>
-            <p><kbd>Arrows</kbd> — move selected cell/overlay</p>
-            <p><kbd>-</kbd> / <kbd>+</kbd> — shrink / grow 10%</p>
-            <p><kbd>Shift+-</kbd> / <kbd>Shift++</kbd> — white margin</p>
-            <p><kbd>Ctrl+V</kbd> — paste overlay</p>
-            <p><kbd>Delete</kbd> — remove overlay</p>
-            <p>Hold 1s + drag — move entire cell</p>
-            <p><kbd>Shift</kbd>+drag — swap images</p>
-            <p>Scroll wheel — zoom in cell</p>
         </div>
     </div>
 
-    <!-- Canvas -->
+    <!-- Canvas area with mode bar -->
     <div class="canvas-container" id="canvas-container">
+        <div class="canvas-mode-bar">
+            <div style="display:flex;align-items:center;gap:3px;">
+                <span style="color:#a0a0c0;font-size:11px;">Objects:</span>
+                <button id="mode-cells-btn" class="mode-bar-btn active-toggle" style="background:#4CAF50;border-color:#4CAF50;color:#fff;"><span class="vis-dot">✓</span> Photo <span class="obj-count-label" id="count-cells">(0)</span></button>
+                <button id="mode-overlays-btn" class="mode-bar-btn active-toggle" style="background:#2196F3;border-color:#2196F3;color:#fff;"><span class="vis-dot">✓</span> Text <span class="obj-count-label" id="count-overlays">(0)</span></button>
+                <button id="mode-borders-btn" class="mode-bar-btn active-toggle" style="background:#FF9800;border-color:#FF9800;color:#fff;"><span class="vis-dot">✓</span> Border <span class="obj-count-label" id="count-borders">(0)</span></button>
+            </div>
+            <div class="separator" style="height:16px;"></div>
+            <button id="resize-mode-btn" class="mode-bar-btn" disabled>Resize</button>
+            <div id="mode-badge" class="mode-badge mode-normal" style="margin:0;font-size:10px;padding:2px 8px;">LAYOUT</div>
+            <p class="hint" id="mode-hint" style="margin:0;font-size:10px;"></p>
+        </div>
         <canvas id="collage-canvas" tabindex="0"></canvas>
         <div class="drop-placeholder" id="drop-placeholder">
             <div class="drop-icon">&#128247;</div>
             <div class="drop-text">Drop photos here</div>
-            <div class="drop-subtext">or use the Load Photos button above</div>
+            <div class="drop-subtext">or use File &gt; Load Photos</div>
         </div>
     </div>
 
@@ -504,8 +491,9 @@
             id: nextBorderObjId++,
             imageId: imageId,
             x: x, y: y, width: w, height: h,
-            mode: 'filled',       // 'filled' | 'transparent'
+            mode: 'filled',
             fillColor: '#ffffff',
+            opacity: 1.0,
             locked: false,
             padding: 0,
             label: 'Border ' + nextBorderObjId
@@ -970,8 +958,9 @@
             var bw = Math.round(bo.width * dpi * scale), bh = Math.round(bo.height * dpi * scale);
 
             ctx.save();
+            ctx.globalAlpha = bo.opacity !== undefined ? bo.opacity : 1;
 
-            if (bo.mode === 'filled') {
+            if (bo.mode === 'filled' && !bo.imageId) {
                 ctx.fillStyle = bo.fillColor;
                 ctx.fillRect(bx, by, bw, bh);
             }
@@ -2364,40 +2353,113 @@
         refreshBtn.addEventListener('click', onRefresh);
         resizeModeBtn.addEventListener('click', onResizeModeToggle);
         exportBtn.addEventListener('click', onExport);
-        // Tools menu
-        var toolsMenu = document.getElementById('tools-menu');
-        // Edit mode buttons
-        function setEditMode(mode) {
-            editMode = mode;
-            document.getElementById('mode-cells-btn').classList.toggle('active-toggle', mode === 'cells');
-            document.getElementById('mode-overlays-btn').classList.toggle('active-toggle', mode === 'overlays');
-            document.getElementById('mode-borders-btn').classList.toggle('active-toggle', mode === 'borders');
-            // Show/hide relevant sidebar sections
-            document.getElementById('overlays-section').style.display = (mode === 'overlays' && collage) ? '' : 'none';
-            document.getElementById('overlay-props-section').style.display = (mode === 'overlays' && selectedOverlayId !== null) ? '' : 'none';
-            document.getElementById('borders-section').style.display = (mode === 'borders') ? '' : 'none';
-            document.getElementById('border-props-section').style.display = (mode === 'borders' && selectedBorderObjId !== null) ? '' : 'none';
-            dirty = true;
-        }
-        document.getElementById('mode-cells-btn').addEventListener('click', function() { setEditMode('cells'); });
-        document.getElementById('mode-overlays-btn').addEventListener('click', function() { setEditMode('overlays'); });
-        document.getElementById('mode-borders-btn').addEventListener('click', function() { setEditMode('borders'); });
 
-        // Visibility toggles
-        function updateVisBtn(btnId, visible, color) {
+        // Menu bar: click to open/close, click outside to close
+        document.querySelectorAll('.menu-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var dropdown = this.parentElement;
+                var wasOpen = dropdown.classList.contains('open');
+                // Close all menus
+                document.querySelectorAll('.menu-dropdown').forEach(function(d) { d.classList.remove('open'); });
+                if (!wasOpen) dropdown.classList.add('open');
+            });
+        });
+        // Close menus on any click outside
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.menu-dropdown').forEach(function(d) { d.classList.remove('open'); });
+        });
+        // Close menu after clicking a menu item
+        document.querySelectorAll('.menu-item, .menu-toggle').forEach(function(item) {
+            item.addEventListener('click', function() {
+                // Don't close for toggle items (visibility) or inline items
+                if (!this.classList.contains('menu-toggle')) {
+                    document.querySelectorAll('.menu-dropdown').forEach(function(d) { d.classList.remove('open'); });
+                }
+            });
+        });
+        // Prevent menu panel clicks from closing
+        document.querySelectorAll('.menu-panel').forEach(function(panel) {
+            panel.addEventListener('click', function(e) { e.stopPropagation(); });
+        });
+
+        // Menu item handlers
+        document.getElementById('menu-load-photos').addEventListener('click', function() { fileInput.click(); });
+        document.getElementById('menu-load-project').addEventListener('click', function() { document.getElementById('load-input').click(); });
+        document.getElementById('tool-calendar').addEventListener('click', function() {
+            alert('Calendar Wizard\n\nThis feature is coming soon.\n\nIt will allow you to create 12, 18, or 24 month calendars, assigning a saved collage layout to each month.');
+        });
+
+        // Filter buttons
+        ['all', 'cells', 'overlays', 'borders'].forEach(function(f) {
+            document.getElementById('filter-' + f + '-btn').addEventListener('click', function() {
+                listFilter = f;
+                document.querySelectorAll('[id^="filter-"][id$="-btn"]').forEach(function(b) { b.classList.remove('active-toggle'); });
+                this.classList.add('active-toggle');
+                renderFileList();
+            });
+        });
+
+        // Collapsible section toggles
+        document.querySelectorAll('.section-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function() {
+                var targetId = this.getAttribute('data-target');
+                var target = document.getElementById(targetId);
+                if (target) {
+                    var collapsed = target.style.display === 'none';
+                    target.style.display = collapsed ? '' : 'none';
+                    this.classList.toggle('collapsed', !collapsed);
+                }
+            });
+        });
+        // Edit mode buttons
+        // Canvas bar: independent visibility toggles (replace old edit mode)
+        function updateCanvasToggle(btnId, flag, onColor) {
             var btn = document.getElementById(btnId);
-            btn.style.background = visible ? color : '#333';
-            btn.style.borderColor = visible ? color : '#555';
-            btn.style.color = visible ? '#fff' : '#666';
+            btn.classList.toggle('active-toggle', flag);
+            btn.style.background = flag ? onColor : '#333';
+            btn.style.borderColor = flag ? onColor : '#555';
+            btn.style.color = flag ? '#fff' : '#bbb';
+            var dot = btn.querySelector('.vis-dot');
+            if (dot) {
+                dot.textContent = flag ? '✓' : '●';
+                dot.style.color = flag ? '#fff' : '#e94560';
+            }
         }
+        document.getElementById('mode-cells-btn').addEventListener('click', function() {
+            showCells = !showCells;
+            updateCanvasToggle('mode-cells-btn', showCells, '#4CAF50');
+            dirty = true;
+        });
+        document.getElementById('mode-overlays-btn').addEventListener('click', function() {
+            showOverlays = !showOverlays;
+            updateCanvasToggle('mode-overlays-btn', showOverlays, '#2196F3');
+            dirty = true;
+        });
+        document.getElementById('mode-borders-btn').addEventListener('click', function() {
+            showBorders = !showBorders;
+            updateCanvasToggle('mode-borders-btn', showBorders, '#FF9800');
+            dirty = true;
+        });
+
+        // Visibility toggles (now menu items with checkmarks)
         document.getElementById('vis-cells-btn').addEventListener('click', function() {
-            showCells = !showCells; updateVisBtn('vis-cells-btn', showCells, '#4CAF50'); dirty = true;
+            showCells = !showCells;
+            this.classList.toggle('off', !showCells);
+            updateCanvasToggle('mode-cells-btn', showCells, '#4CAF50');
+            dirty = true;
         });
         document.getElementById('vis-overlays-btn').addEventListener('click', function() {
-            showOverlays = !showOverlays; updateVisBtn('vis-overlays-btn', showOverlays, '#2196F3'); dirty = true;
+            showOverlays = !showOverlays;
+            this.classList.toggle('off', !showOverlays);
+            updateCanvasToggle('mode-overlays-btn', showOverlays, '#2196F3');
+            dirty = true;
         });
         document.getElementById('vis-borders-btn').addEventListener('click', function() {
-            showBorders = !showBorders; updateVisBtn('vis-borders-btn', showBorders, '#FF9800'); dirty = true;
+            showBorders = !showBorders;
+            this.classList.toggle('off', !showBorders);
+            updateCanvasToggle('mode-borders-btn', showBorders, '#FF9800');
+            dirty = true;
         });
 
         // Border obj management
@@ -2408,8 +2470,9 @@
             borderObjs.push(bo);
             selectedBorderObjId = bo.id;
             dirty = true;
-            renderBorderList();
+            renderFileList();
             updateBorderProps();
+            updateCellInfo();
             updateStatus('Border element added. Set color or assign an image in properties.');
         });
 
@@ -2419,13 +2482,30 @@
         document.getElementById('border-locked').addEventListener('change', onBorderPropChange);
         document.getElementById('border-mode').addEventListener('change', onBorderPropChange);
         document.getElementById('border-fill').addEventListener('input', onBorderPropChange);
+        document.getElementById('border-opacity').addEventListener('input', onBorderPropChange);
+        // Border image file picker
+        document.getElementById('border-image-input').addEventListener('change', async function(e) {
+            if (!e.target.files.length || selectedBorderObjId === null) return;
+            var bo = borderObjs.find(function(b) { return b.id === selectedBorderObjId; });
+            if (!bo) return;
+            var ids = await imageManager.loadFiles(e.target.files);
+            bo.imageId = ids[0];
+            var img = imageManager.get(ids[0]);
+            if (img) img.sourceType = 'border';
+            e.target.value = '';
+            dirty = true;
+            renderFileList();
+            updateBorderProps();
+            updateStatus('Border image loaded.');
+        });
         document.getElementById('delete-border-btn').addEventListener('click', function() {
             if (selectedBorderObjId === null) return;
             borderObjs = borderObjs.filter(function(b) { return b.id !== selectedBorderObjId; });
             selectedBorderObjId = null;
             dirty = true;
-            renderBorderList();
+            renderFileList();
             updateBorderProps();
+            updateCellInfo();
         });
 
         // Identify mode
@@ -2443,15 +2523,7 @@
             }, 5000);
         });
 
-        document.getElementById('tools-btn').addEventListener('click', function(e) {
-            e.stopPropagation();
-            toolsMenu.style.display = toolsMenu.style.display === 'none' ? '' : 'none';
-        });
-        document.addEventListener('click', function() { toolsMenu.style.display = 'none'; });
-        document.getElementById('tool-calendar').addEventListener('click', function() {
-            toolsMenu.style.display = 'none';
-            alert('Calendar Wizard\n\nThis feature is coming soon.\n\nIt will allow you to create 12, 18, or 24 month calendars, assigning a saved collage layout to each month.');
-        });
+        // (tools menu moved to Layout dropdown)
 
         document.getElementById('layout-scale').addEventListener('input', function() {
             updateLayoutScaleLabel();
@@ -2461,9 +2533,6 @@
         });
         document.getElementById('share-btn').addEventListener('click', function() {
             if (collage) createShareableProject(collage, imageManager);
-        });
-        document.getElementById('load-btn').addEventListener('click', function() {
-            document.getElementById('load-input').click();
         });
         document.getElementById('load-input').addEventListener('change', function(e) {
             if (e.target.files.length) {
@@ -2573,6 +2642,11 @@
         });
 
         // Text overlay mode: enter
+        // Add Photo button — triggers file input
+        document.getElementById('add-photo-btn').addEventListener('click', function() {
+            fileInput.click();
+        });
+
         document.getElementById('enter-text-mode-btn').addEventListener('click', function() {
             textOverlayMode = true;
             document.getElementById('text-ov-editor').style.display = '';
@@ -3076,227 +3150,216 @@
     // ========================================================================
     // File list management
     // ========================================================================
+    var listFilter = 'all'; // 'all' | 'cells' | 'overlays' | 'borders'
+
     function renderFileList() {
         var list = document.getElementById('file-list');
         var countEl = document.getElementById('photo-count');
         var all = imageManager.getAll();
 
-        if (all.length === 0) {
-            list.innerHTML = '<p class="hint">No photos loaded yet.</p>';
-            countEl.textContent = '';
+        // Build unified object list: border objs, cells (draw order), overlays, unassigned
+        var items = []; // { type, imgId, img, objRef, arrName, arrIdx }
+        var assignedIds = new Set();
+
+        // Border objects
+        for (var i = 0; i < borderObjs.length; i++) {
+            var bo = borderObjs[i];
+            var img = bo.imageId ? imageManager.get(bo.imageId) : null;
+            items.push({ type: 'border', imgId: bo.imageId, img: img, objRef: bo, arrName: 'borderObjs', arrIdx: i,
+                         name: img ? img.fileName : (bo.mode === 'filled' ? 'Solid ' + bo.fillColor : 'Border'), id: bo.id });
+            if (bo.imageId) assignedIds.add(bo.imageId);
+        }
+        // Cells in draw order
+        if (collage) {
+            for (var i = 0; i < collage.cells.length; i++) {
+                var cell = collage.cells[i];
+                var img = cell.imageId ? imageManager.get(cell.imageId) : null;
+                items.push({ type: 'cell', imgId: cell.imageId, img: img, objRef: cell, arrName: 'cells', arrIdx: i,
+                             name: img ? img.fileName : 'Empty cell', id: cell.id });
+                if (cell.imageId) assignedIds.add(cell.imageId);
+            }
+        }
+        // Overlays
+        for (var i = 0; i < overlays.length; i++) {
+            var ov = overlays[i];
+            var img = ov.imageId ? imageManager.get(ov.imageId) : null;
+            items.push({ type: 'overlay', imgId: ov.imageId, img: img, objRef: ov, arrName: 'overlays', arrIdx: i,
+                         name: img ? img.fileName : 'Overlay', id: ov.id });
+            if (ov.imageId) assignedIds.add(ov.imageId);
+        }
+        // Unassigned images
+        for (var i = 0; i < all.length; i++) {
+            if (!assignedIds.has(all[i].id)) {
+                items.push({ type: 'unassigned', imgId: all[i].id, img: all[i], objRef: null, arrName: null, arrIdx: -1,
+                             name: all[i].fileName, id: null });
+            }
+        }
+
+        // Apply filter
+        var filtered = items;
+        if (listFilter !== 'all') {
+            filtered = items.filter(function(it) {
+                if (listFilter === 'cells') return it.type === 'cell' || it.type === 'unassigned';
+                if (listFilter === 'overlays') return it.type === 'overlay';
+                if (listFilter === 'borders') return it.type === 'border';
+                return true;
+            });
+        }
+
+        var total = items.length;
+        countEl.textContent = total > 0 ? '(' + total + ')' : '';
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<p class="hint">' + (total === 0 ? 'No objects yet.' : 'No ' + listFilter + ' to show.') + '</p>';
             return;
         }
 
-        countEl.textContent = '(' + imageManager.enabledCount() + '/' + all.length + ')';
-
-        // Build ordered list: cells in draw order, then unassigned images
-        var orderedItems = []; // { imgId, cellIndex (or -1), img }
-        var assignedIds = new Set();
-
-        if (collage) {
-            for (var ci = 0; ci < collage.cells.length; ci++) {
-                var cell = collage.cells[ci];
-                if (cell.imageId) {
-                    var img = imageManager.get(cell.imageId);
-                    if (img) {
-                        orderedItems.push({ imgId: cell.imageId, cellIndex: ci, img: img });
-                        assignedIds.add(cell.imageId);
-                    }
-                }
-            }
-        }
-        // Add unassigned images at the end
-        for (var i = 0; i < all.length; i++) {
-            if (!assignedIds.has(all[i].id)) {
-                orderedItems.push({ imgId: all[i].id, cellIndex: -1, img: all[i] });
-            }
-        }
-
-        // Determine which image is selected (via cell selection)
+        // Determine selected image
         var selectedImgId = null;
         if (interaction && interaction.selectedCellId !== null && collage) {
             var selCell = collage.cells.find(function(c) { return c.id === interaction.selectedCellId; });
             if (selCell) selectedImgId = selCell.imageId;
         }
-        // Also check selected overlay
         if (!selectedImgId && selectedOverlayId !== null) {
             var selOv = overlays.find(function(o) { return o.id === selectedOverlayId; });
             if (selOv) selectedImgId = selOv.imageId;
         }
+        if (!selectedImgId && selectedBorderObjId !== null) {
+            var selBo = borderObjs.find(function(b) { return b.id === selectedBorderObjId; });
+            if (selBo) selectedImgId = selBo.imageId;
+        }
 
         var html = '';
-        for (var i = 0; i < orderedItems.length; i++) {
-            var item = orderedItems[i];
-            var img = item.img;
-            var checkedAttr = img.enabled ? ' checked' : '';
-            var dimClass = img.enabled ? '' : ' file-item-disabled';
-            var selClass = (img.id === selectedImgId || img.id === selectedUnassignedImgId) ? ' file-item-selected' : '';
-            var reorderBtns = '';
-            if (item.cellIndex >= 0) {
-                reorderBtns = '<button class="ov-reorder-btn cell-order-up" data-cell-idx="' + item.cellIndex + '" title="Bring forward">▲</button>' +
-                    '<button class="ov-reorder-btn cell-order-down" data-cell-idx="' + item.cellIndex + '" title="Send back">▼</button>';
-            }
-            var orderLabel = item.cellIndex >= 0 ? '<span style="color:#666;font-size:10px;min-width:14px;">' + (item.cellIndex + 1) + '</span>' : '';
-            html += '<div class="file-item' + dimClass + selClass + '" data-id="' + img.id + '" data-cell-idx="' + item.cellIndex + '">' +
-                orderLabel +
-                reorderBtns +
-                '<input type="checkbox" class="file-checkbox" data-img-id="' + img.id + '"' + checkedAttr + '>' +
-                '<canvas class="file-thumb" width="36" height="36" data-thumb-id="' + img.id + '"></canvas>' +
-                '<span class="file-name" title="' + img.fileName + '">' + img.fileName + '</span>' +
-                '</div>';
+        var typeColors = { cell: '#4CAF50', overlay: '#2196F3', border: '#FF9800', unassigned: '#555' };
+        var typeLabels = { cell: 'C', overlay: 'OV', border: 'B', unassigned: '—' };
+
+        for (var i = 0; i < filtered.length; i++) {
+            var it = filtered[i];
+            var isSel = (it.imgId && it.imgId === selectedImgId) || (it.imgId && it.imgId === selectedUnassignedImgId);
+            var dimClass = (it.img && !it.img.enabled) ? ' file-item-disabled' : '';
+            var selClass = isSel ? ' file-item-selected' : '';
+            var badge = '<span class="obj-type-badge obj-type-' + it.type + '">' + typeLabels[it.type] + '</span>';
+            var reorderBtns = '<button class="ov-reorder-btn obj-reorder" data-obj-type="' + it.type + '" data-obj-idx="' + it.arrIdx + '" data-dir="up" title="Move up">▲</button>' +
+                '<button class="ov-reorder-btn obj-reorder" data-obj-type="' + it.type + '" data-obj-idx="' + it.arrIdx + '" data-dir="down" title="Move down">▼</button>';
+            if (it.type === 'unassigned') reorderBtns = '<span style="min-width:24px;"></span>';
+            var checkbox = it.img ? '<input type="checkbox" class="file-checkbox" data-img-id="' + it.imgId + '"' + (it.img.enabled ? ' checked' : '') + '>' : '';
+            var thumb = it.img ? '<canvas class="file-thumb" width="36" height="36" data-thumb-id="' + it.imgId + '"></canvas>' : '<span class="file-thumb" style="display:inline-block;width:36px;height:36px;background:' + (it.objRef && it.objRef.fillColor || '#333') + ';border-radius:3px;"></span>';
+
+            html += '<div class="file-item' + dimClass + selClass + '" data-id="' + (it.imgId || '') + '" data-obj-type="' + it.type + '" data-obj-id="' + (it.id || '') + '" data-obj-idx="' + it.arrIdx + '">' +
+                reorderBtns + badge + checkbox + thumb +
+                '<span class="file-name" title="' + it.name + '">' + it.name + '</span></div>';
         }
         list.innerHTML = html;
 
-        // Draw thumbnails into the small canvases
-        for (var i = 0; i < orderedItems.length; i++) {
-            var img = orderedItems[i].img;
-            var thumbCanvas = list.querySelector('[data-thumb-id="' + img.id + '"]');
+        // Draw thumbnails
+        for (var i = 0; i < filtered.length; i++) {
+            var it = filtered[i];
+            if (!it.img) continue;
+            var thumbCanvas = list.querySelector('[data-thumb-id="' + it.imgId + '"]');
             if (thumbCanvas) {
                 var tctx = thumbCanvas.getContext('2d');
-                var aspect = img.naturalWidth / img.naturalHeight;
+                var bmp = it.img.thumbnail;
+                var aspect = bmp.width / bmp.height;
                 var sw, sh, sx, sy;
-                if (aspect > 1) {
-                    sh = img.thumbnail.height; sw = sh; sx = (img.thumbnail.width - sw) / 2; sy = 0;
-                } else {
-                    sw = img.thumbnail.width; sh = sw; sy = (img.thumbnail.height - sh) / 2; sx = 0;
-                }
-                tctx.drawImage(img.thumbnail, sx, sy, sw, sh, 0, 0, 36, 36);
+                if (aspect > 1) { sh = bmp.height; sw = sh; sx = (bmp.width - sw) / 2; sy = 0; }
+                else { sw = bmp.width; sh = sw; sy = (bmp.height - sh) / 2; sx = 0; }
+                tctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, 36, 36);
             }
         }
 
-        // Attach checkbox listeners
-        var checkboxes = list.querySelectorAll('.file-checkbox');
-        for (var i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].addEventListener('change', onFileToggle);
-        }
+        // Checkbox listeners
+        list.querySelectorAll('.file-checkbox').forEach(function(cb) {
+            cb.addEventListener('change', onFileToggle);
+        });
 
-        // Click file item to select its cell (or show properties for unassigned)
-        var fileItems = list.querySelectorAll('.file-item');
-        for (var i = 0; i < fileItems.length; i++) {
-            fileItems[i].addEventListener('click', function(e) {
-                // Don't trigger on checkbox or button clicks
+        // Click to select
+        list.querySelectorAll('.file-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+                var objType = this.getAttribute('data-obj-type');
+                var objId = parseInt(this.getAttribute('data-obj-id'));
                 var imgId = this.getAttribute('data-id');
-                var cellIdx = parseInt(this.getAttribute('data-cell-idx'));
+                var objIdx = parseInt(this.getAttribute('data-obj-idx'));
 
-                if (cellIdx >= 0 && collage && interaction) {
-                    // Select the cell and flash green
-                    var cell = collage.cells[cellIdx];
+                // Clear all selections
+                if (interaction) interaction.selectedCellId = null;
+                selectedOverlayId = null;
+                selectedBorderObjId = null;
+                selectedUnassignedImgId = null;
+                if (tabFlashTimer) clearTimeout(tabFlashTimer);
+                tabFlashCellId = null; tabFlashOvId = null;
+
+                if (objType === 'cell' && collage) {
+                    var cell = collage.cells[objIdx];
                     if (cell) {
                         interaction.selectedCellId = cell.id;
-                        selectedOverlayId = null;
-                        selectedUnassignedImgId = null;
-                        if (tabFlashTimer) clearTimeout(tabFlashTimer);
                         tabFlashCellId = cell.id;
-                        tabFlashTimer = setTimeout(function() {
-                            tabFlashCellId = null;
-                            dirty = true;
-                        }, 3000);
-                        dirty = true;
-                        updateCellInfo();
-                        renderFileList();
                     }
-                } else {
-                    // Check if this image belongs to an overlay
-                    var matchOv = overlays.find(function(o) { return o.imageId === imgId; });
-                    if (matchOv) {
-                        // Select the overlay and flash green
-                        selectedOverlayId = matchOv.id;
-                        if (interaction) interaction.selectedCellId = null;
-                        selectedUnassignedImgId = null;
-                        if (tabFlashTimer) clearTimeout(tabFlashTimer);
-                        tabFlashCellId = null;
-                        tabFlashOvId = matchOv.id;
-                        tabFlashTimer = setTimeout(function() {
-                            tabFlashOvId = null;
-                            dirty = true;
-                        }, 3000);
-                        dirty = true;
-                        updateOverlayProps();
-                        updateCellInfo();
-                        renderOverlayList();
-                        renderFileList();
-                    } else {
-                        // Truly unassigned image — show its properties
-                        var img = imageManager.get(imgId);
-                        if (img) {
-                            if (interaction) interaction.selectedCellId = null;
-                            selectedOverlayId = null;
-                            selectedUnassignedImgId = imgId;
-                            imagePropsSection.style.display = '';
-                            propFilename.textContent = img.fileName || '-';
-                            propDate.textContent = img.date || '-';
-                            propTime.textContent = img.time || '-';
-                            propResolution.textContent = img.naturalWidth + ' x ' + img.naturalHeight + ' px';
-                            propCellsize.textContent = 'Not assigned';
-                            document.getElementById('cell-lock-row').style.display = 'none';
-                            cellInfo.innerHTML = '<p><strong>Unassigned image</strong></p>';
-                            dirty = true;
-                            renderFileList();
-                        }
-                    }
+                } else if (objType === 'overlay') {
+                    selectedOverlayId = objId;
+                    tabFlashOvId = objId;
+                } else if (objType === 'border') {
+                    selectedBorderObjId = objId;
+                } else if (objType === 'unassigned') {
+                    selectedUnassignedImgId = imgId;
                 }
-            });
-        }
 
-        // Attach reorder button listeners
-        var upBtns = list.querySelectorAll('.cell-order-up');
-        var downBtns = list.querySelectorAll('.cell-order-down');
-        for (var i = 0; i < upBtns.length; i++) {
-            upBtns[i].addEventListener('click', function(e) {
-                e.stopPropagation();
-                var idx = parseInt(this.getAttribute('data-cell-idx'));
-                if (idx > 0 && collage) {
-                    var tmp = collage.cells[idx];
-                    collage.cells[idx] = collage.cells[idx - 1];
-                    collage.cells[idx - 1] = tmp;
-                    dirty = true;
-                    renderFileList();
-                }
-            });
-        }
-        for (var i = 0; i < downBtns.length; i++) {
-            downBtns[i].addEventListener('click', function(e) {
-                e.stopPropagation();
-                var idx = parseInt(this.getAttribute('data-cell-idx'));
-                if (collage && idx < collage.cells.length - 1) {
-                    var tmp = collage.cells[idx];
-                    collage.cells[idx] = collage.cells[idx + 1];
-                    collage.cells[idx + 1] = tmp;
-                    dirty = true;
-                    renderFileList();
-                }
-            });
-        }
+                tabFlashTimer = setTimeout(function() {
+                    tabFlashCellId = null; tabFlashOvId = null; dirty = true;
+                }, 3000);
 
-        // Hover preview on file items
-        var previewTip = document.getElementById('img-preview-tip');
-        var previewCanvas = document.getElementById('preview-canvas');
-        var previewLabel = document.getElementById('preview-label');
-        var allFileItems = list.querySelectorAll('.file-item');
-        for (var i = 0; i < allFileItems.length; i++) {
-            allFileItems[i].addEventListener('mouseenter', function(e) {
+                dirty = true;
+                updateCellInfo();
+                updateOverlayProps();
+                updateBorderProps();
+                renderFileList();
+            });
+
+            // Hover preview
+            item.addEventListener('mouseenter', function(e) {
                 var imgId = this.getAttribute('data-id');
+                if (!imgId) return;
                 var img = imageManager.get(imgId);
                 if (!img) return;
+                var previewTip = document.getElementById('img-preview-tip');
+                var previewCanvas = document.getElementById('preview-canvas');
+                var previewLabel = document.getElementById('preview-label');
                 var bmp = img.thumbnail;
                 var pw = 150, ph = 150;
                 var aspect = bmp.width / bmp.height;
-                if (aspect > 1) { ph = Math.round(pw / aspect); }
-                else { pw = Math.round(ph * aspect); }
+                if (aspect > 1) { ph = Math.round(pw / aspect); } else { pw = Math.round(ph * aspect); }
                 previewCanvas.width = pw; previewCanvas.height = ph;
-                var pctx = previewCanvas.getContext('2d');
-                pctx.drawImage(bmp, 0, 0, pw, ph);
+                previewCanvas.getContext('2d').drawImage(bmp, 0, 0, pw, ph);
                 previewLabel.textContent = img.fileName + ' (' + img.naturalWidth + '×' + img.naturalHeight + ')';
                 previewTip.style.display = 'block';
                 var rect = this.getBoundingClientRect();
                 previewTip.style.left = (rect.right + 8) + 'px';
                 previewTip.style.top = Math.max(4, rect.top - 40) + 'px';
             });
-            allFileItems[i].addEventListener('mouseleave', function() {
-                previewTip.style.display = 'none';
+            item.addEventListener('mouseleave', function() {
+                document.getElementById('img-preview-tip').style.display = 'none';
             });
-        }
+        });
+
+        // Reorder buttons
+        list.querySelectorAll('.obj-reorder').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var type = this.getAttribute('data-obj-type');
+                var idx = parseInt(this.getAttribute('data-obj-idx'));
+                var dir = this.getAttribute('data-dir');
+                var arr = type === 'cell' ? (collage ? collage.cells : [])
+                        : type === 'overlay' ? overlays
+                        : type === 'border' ? borderObjs : [];
+                if (dir === 'up' && idx > 0) {
+                    var tmp = arr[idx]; arr[idx] = arr[idx - 1]; arr[idx - 1] = tmp;
+                } else if (dir === 'down' && idx < arr.length - 1) {
+                    var tmp = arr[idx]; arr[idx] = arr[idx + 1]; arr[idx + 1] = tmp;
+                }
+                dirty = true;
+                renderFileList();
+            });
+        });
 
         // Update frame image dropdown
         var frameSel = document.getElementById('setting-frame-image');
@@ -3309,6 +3372,12 @@
             frameSel.appendChild(opt);
         }
         frameSel.value = frameVal;
+
+        // Update object counts on canvas bar buttons
+        var cellCount = collage ? collage.cells.length : 0;
+        document.getElementById('count-cells').textContent = '(' + cellCount + ')';
+        document.getElementById('count-overlays').textContent = '(' + overlays.length + ')';
+        document.getElementById('count-borders').textContent = '(' + borderObjs.length + ')';
     }
 
     function onFileToggle(e) {
@@ -3777,184 +3846,33 @@
     // ========================================================================
     // Overlay list and properties UI
     // ========================================================================
-    function renderOverlayList() {
-        var list = document.getElementById('overlay-list');
-        var countEl = document.getElementById('overlay-count');
-        var section = document.getElementById('overlays-section');
+    function renderOverlayList() { /* unified into renderFileList */ }
+    function renderBorderList() { /* unified into renderFileList */ }
 
-        if (!collage) { section.style.display = 'none'; return; }
-        section.style.display = '';
-
-        countEl.textContent = overlays.length > 0 ? '(' + overlays.length + ')' : '';
-
-        if (overlays.length === 0) {
-            list.innerHTML = '';
-            return;
-        }
-
-        var html = '';
-        for (var i = 0; i < overlays.length; i++) {
-            var ov = overlays[i];
-            var img = imageManager.get(ov.imageId);
-            var name = img ? img.fileName : 'Overlay ' + ov.id;
-            var selClass = (ov.id === selectedOverlayId) ? ' ov-selected' : '';
-            html += '<div class="overlay-item' + selClass + '" data-ov-id="' + ov.id + '">' +
-                '<button class="ov-reorder-btn" data-ov-dir="up" data-ov-idx="' + i + '" title="Move up (draw on top)">&#9650;</button>' +
-                '<button class="ov-reorder-btn" data-ov-dir="down" data-ov-idx="' + i + '" title="Move down (draw behind)">&#9660;</button>' +
-                '<span class="ov-label" title="' + name + '">' + name + '</span>' +
-                '</div>';
-        }
-        list.innerHTML = html;
-
-        // Click to select with green flash
-        var items = list.querySelectorAll('.overlay-item');
-        for (var i = 0; i < items.length; i++) {
-            items[i].addEventListener('click', function(e) {
-                if (e.target.classList.contains('ov-reorder-btn')) return;
-                var ovId = parseInt(this.getAttribute('data-ov-id'));
-                selectedOverlayId = ovId;
-                if (interaction) interaction.selectedCellId = null;
-                // Flash green
-                if (tabFlashTimer) clearTimeout(tabFlashTimer);
-                tabFlashCellId = null;
-                tabFlashOvId = ovId;
-                tabFlashTimer = setTimeout(function() {
-                    tabFlashOvId = null;
-                    dirty = true;
-                }, 3000);
-                dirty = true;
-                renderOverlayList();
-                updateOverlayProps();
-                updateCellInfo();
-                renderFileList();
-            });
-        }
-
-        // Reorder buttons
-        var btns = list.querySelectorAll('.ov-reorder-btn');
-        for (var i = 0; i < btns.length; i++) {
-            btns[i].addEventListener('click', function(e) {
-                e.stopPropagation();
-                var idx = parseInt(this.getAttribute('data-ov-idx'));
-                var dir = this.getAttribute('data-ov-dir');
-                if (dir === 'up' && idx > 0) {
-                    var tmp = overlays[idx]; overlays[idx] = overlays[idx-1]; overlays[idx-1] = tmp;
-                } else if (dir === 'down' && idx < overlays.length - 1) {
-                    var tmp = overlays[idx]; overlays[idx] = overlays[idx+1]; overlays[idx+1] = tmp;
-                }
-                dirty = true;
-                renderOverlayList();
-            });
-        }
-
-        // Hover preview on overlay items
-        var previewTip = document.getElementById('img-preview-tip');
-        var previewCanvas = document.getElementById('preview-canvas');
-        var previewLabel = document.getElementById('preview-label');
-        var ovItems = list.querySelectorAll('.overlay-item');
-        for (var i = 0; i < ovItems.length; i++) {
-            ovItems[i].addEventListener('mouseenter', function(e) {
-                var ovId = parseInt(this.getAttribute('data-ov-id'));
-                var ov = overlays.find(function(o) { return o.id === ovId; });
-                if (!ov) return;
-                var img = imageManager.get(ov.imageId);
-                if (!img) return;
-                var bmp = img.thumbnail;
-                var pw = 150, ph = 150;
-                var aspect = bmp.width / bmp.height;
-                if (aspect > 1) { ph = Math.round(pw / aspect); }
-                else { pw = Math.round(ph * aspect); }
-                previewCanvas.width = pw; previewCanvas.height = ph;
-                var pctx = previewCanvas.getContext('2d');
-                // Checkerboard background to show transparency
-                for (var cy = 0; cy < ph; cy += 8) {
-                    for (var cx = 0; cx < pw; cx += 8) {
-                        pctx.fillStyle = ((cx + cy) % 16 === 0) ? '#e0e0e0' : '#ffffff';
-                        pctx.fillRect(cx, cy, 8, 8);
-                    }
-                }
-                pctx.drawImage(bmp, 0, 0, pw, ph);
-                previewLabel.textContent = img.fileName + ' (' + img.naturalWidth + '×' + img.naturalHeight + ')';
-                previewTip.style.display = 'block';
-                var rect = this.getBoundingClientRect();
-                previewTip.style.left = (rect.right + 8) + 'px';
-                previewTip.style.top = Math.max(4, rect.top - 40) + 'px';
-            });
-            ovItems[i].addEventListener('mouseleave', function() {
-                previewTip.style.display = 'none';
-            });
-        }
-    }
-
-    // ========================================================================
-    // Border object list & properties
-    // ========================================================================
-    function renderBorderList() {
-        var list = document.getElementById('border-list');
-        var countEl = document.getElementById('border-count');
-        countEl.textContent = borderObjs.length > 0 ? '(' + borderObjs.length + ')' : '';
-        if (borderObjs.length === 0) { list.innerHTML = ''; return; }
-        var html = '';
-        for (var i = 0; i < borderObjs.length; i++) {
-            var bo = borderObjs[i];
-            var img = imageManager.get(bo.imageId);
-            var name = img ? img.fileName : (bo.mode === 'filled' ? 'Solid ' + bo.fillColor : 'Border ' + bo.id);
-            var selClass = (bo.id === selectedBorderObjId) ? ' ov-selected' : '';
-            html += '<div class="overlay-item' + selClass + '" data-border-id="' + bo.id + '">' +
-                '<button class="ov-reorder-btn" data-bo-dir="up" data-bo-idx="' + i + '">&#9650;</button>' +
-                '<button class="ov-reorder-btn" data-bo-dir="down" data-bo-idx="' + i + '">&#9660;</button>' +
-                '<span class="ov-label" title="' + name + '">' + name + '</span></div>';
-        }
-        list.innerHTML = html;
-        // Click to select
-        var items = list.querySelectorAll('.overlay-item');
-        for (var i = 0; i < items.length; i++) {
-            items[i].addEventListener('click', function(e) {
-                if (e.target.classList.contains('ov-reorder-btn')) return;
-                selectedBorderObjId = parseInt(this.getAttribute('data-border-id'));
-                if (interaction) interaction.selectedCellId = null;
-                selectedOverlayId = null;
-                dirty = true;
-                renderBorderList();
-                updateBorderProps();
-            });
-        }
-        // Reorder
-        var btns = list.querySelectorAll('.ov-reorder-btn');
-        for (var i = 0; i < btns.length; i++) {
-            btns[i].addEventListener('click', function(e) {
-                e.stopPropagation();
-                var idx = parseInt(this.getAttribute('data-bo-idx'));
-                var dir = this.getAttribute('data-bo-dir');
-                if (dir === 'up' && idx > 0) {
-                    var tmp = borderObjs[idx]; borderObjs[idx] = borderObjs[idx-1]; borderObjs[idx-1] = tmp;
-                } else if (dir === 'down' && idx < borderObjs.length - 1) {
-                    var tmp = borderObjs[idx]; borderObjs[idx] = borderObjs[idx+1]; borderObjs[idx+1] = tmp;
-                }
-                dirty = true;
-                renderBorderList();
-            });
-        }
-    }
 
     function updateBorderProps() {
         var section = document.getElementById('border-props-section');
-        if (selectedBorderObjId === null || editMode !== 'borders') { section.style.display = 'none'; return; }
+        if (selectedBorderObjId === null) { section.style.display = 'none'; return; }
         var bo = borderObjs.find(function(b) { return b.id === selectedBorderObjId; });
         if (!bo) { section.style.display = 'none'; return; }
         section.style.display = '';
         var img = imageManager.get(bo.imageId);
         var infoEl = document.getElementById('border-image-info');
         infoEl.innerHTML = img ? '<strong>' + img.fileName + '</strong><br>' + img.naturalWidth + ' × ' + img.naturalHeight + ' px'
-                                : '<em>No image — solid color</em>';
+                                : '<em>Solid color fill</em>';
         document.getElementById('border-locked').checked = bo.locked;
         document.getElementById('border-x').value = bo.x.toFixed(3);
         document.getElementById('border-y').value = bo.y.toFixed(3);
         document.getElementById('border-w').value = bo.width.toFixed(3);
         document.getElementById('border-h').value = bo.height.toFixed(3);
-        document.getElementById('border-mode').value = bo.mode;
+        document.getElementById('border-mode').value = bo.imageId ? 'image' : 'filled';
         document.getElementById('border-fill').value = bo.fillColor;
-        document.getElementById('border-fill').style.display = bo.mode === 'filled' ? '' : 'none';
+        var opacity = bo.opacity !== undefined ? bo.opacity : 1;
+        document.getElementById('border-opacity').value = Math.round(opacity * 100);
+        document.getElementById('border-opacity-val').textContent = Math.round(opacity * 100) + '%';
+        document.getElementById('border-color-row').style.display = bo.imageId ? 'none' : '';
+        document.getElementById('border-image-row').style.display = bo.imageId ? '' : (document.getElementById('border-mode').value === 'image' ? '' : 'none');
+        document.getElementById('border-image-name').textContent = img ? img.fileName : 'None';
     }
 
     function onBorderPropChange() {
@@ -3966,9 +3884,17 @@
         bo.y = parseFloat(document.getElementById('border-y').value) || 0;
         bo.width = Math.max(0.25, parseFloat(document.getElementById('border-w').value) || 0.25);
         bo.height = Math.max(0.25, parseFloat(document.getElementById('border-h').value) || 0.25);
-        bo.mode = document.getElementById('border-mode').value;
+        var mode = document.getElementById('border-mode').value;
+        if (mode === 'filled') {
+            bo.mode = 'filled';
+            // Don't clear imageId here — user might switch back
+        }
         bo.fillColor = document.getElementById('border-fill').value;
-        document.getElementById('border-fill').style.display = bo.mode === 'filled' ? '' : 'none';
+        bo.opacity = parseInt(document.getElementById('border-opacity').value) / 100;
+        document.getElementById('border-opacity-val').textContent = document.getElementById('border-opacity').value + '%';
+        // Show/hide rows based on mode
+        document.getElementById('border-color-row').style.display = (mode === 'image' && bo.imageId) ? 'none' : '';
+        document.getElementById('border-image-row').style.display = mode === 'image' ? '' : 'none';
         dirty = true;
     }
 
@@ -4136,22 +4062,45 @@
         }
     }
 
-    function updateCellInfo() {
-        // Also update overlay UI
-        updateOverlayProps();
-        renderOverlayList();
+    function setPropsTypeLabel(type, text) {
+        var label = document.getElementById('props-type-label');
+        var badge = document.getElementById('props-type-badge');
+        var textEl = document.getElementById('props-type-text');
+        if (!type) { label.style.display = 'none'; return; }
+        label.style.display = '';
+        badge.className = 'obj-type-badge obj-type-' + type;
+        var badges = { cell: 'C', overlay: 'OV', border: 'B', unassigned: '—' };
+        badge.textContent = badges[type] || '?';
+        textEl.textContent = text || '';
+    }
 
-        // Clear unassigned selection when a cell is selected
+    function updateCellInfo() {
+        updateOverlayProps();
+        updateBorderProps();
+
         if (interaction && interaction.selectedCellId !== null) {
             selectedUnassignedImgId = null;
         }
 
         var cellLockRow = document.getElementById('cell-lock-row');
         var cellLockedCb = document.getElementById('cell-locked');
+
+        // Show type label based on what's selected
+        if (selectedOverlayId !== null) {
+            setPropsTypeLabel('overlay', 'Overlay Element');
+        } else if (selectedBorderObjId !== null) {
+            setPropsTypeLabel('border', 'Border Element');
+        } else if (selectedUnassignedImgId) {
+            setPropsTypeLabel('unassigned', 'Unassigned Image');
+        } else if (interaction && interaction.selectedCellId !== null) {
+            setPropsTypeLabel('cell', 'Cell Photo');
+        } else {
+            setPropsTypeLabel(null);
+        }
+
         if (!interaction || interaction.selectedCellId === null) {
-            // Don't overwrite if showing unassigned image properties
             if (selectedUnassignedImgId) return;
-            cellInfo.innerHTML = '<p class="hint">Click a cell or press <kbd>Tab</kbd> to cycle.</p>';
+            cellInfo.innerHTML = '<p class="hint">Select an object to view properties.</p>';
             imagePropsSection.style.display = 'none';
             cellLockRow.style.display = 'none';
             return;
