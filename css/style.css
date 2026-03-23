@@ -187,6 +187,33 @@ body {
     border-left: 3px solid #2196F3;
 }
 
+/* Hover preview tooltip */
+.img-preview-tip {
+    display: none;
+    position: fixed;
+    z-index: 10001;
+    background: #1a1a2e;
+    border: 1px solid #0f3460;
+    border-radius: 6px;
+    padding: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    pointer-events: none;
+}
+.img-preview-tip canvas {
+    display: block;
+    border-radius: 3px;
+}
+.img-preview-tip .preview-label {
+    font-size: 10px;
+    color: #a0a0c0;
+    text-align: center;
+    margin-top: 3px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .file-checkbox {
     flex-shrink: 0;
     accent-color: #e94560;

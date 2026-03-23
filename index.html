@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collage - Photo Layout Tool</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
     <!-- Toolbar -->
@@ -25,9 +26,11 @@
         <div class="separator"></div>
         <button id="save-btn">Save</button>
         <button id="load-btn">Load</button>
-        <input type="file" id="load-input" accept=".collage,.json" style="display:none">
+        <input type="file" id="load-input" accept=".collage,.json,.zip" style="display:none">
         <button id="export-btn" disabled>Export</button>
+        <button id="share-btn" disabled>Share</button>
         <div class="separator"></div>
+        <button id="identify-btn" disabled>Identify</button>
         <button id="settings-btn">Settings</button>
         <div style="position:relative;display:inline-block;">
             <button id="tools-btn">Tools ▾</button>
@@ -62,8 +65,15 @@
                 <input type="number" id="dpi" value="300" min="72" max="600" step="1">
             </div>
             <div class="settings-row">
-                <label>Border</label>
-                <input type="number" id="perimeter-margin" value="0.25" min="0" max="3" step="0.0625">
+                <label>Margins</label>
+                <span style="font-size:11px;color:#a0a0c0;">T</span>
+                <input type="number" id="margin-top" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                <span style="font-size:11px;color:#a0a0c0;">B</span>
+                <input type="number" id="margin-bottom" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                <span style="font-size:11px;color:#a0a0c0;">L</span>
+                <input type="number" id="margin-left" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                <span style="font-size:11px;color:#a0a0c0;">R</span>
+                <input type="number" id="margin-right" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
             </div>
             <div class="settings-row">
                 <label>Gap</label>
@@ -86,6 +96,14 @@
                     </select>
                 </div>
                 <p class="modal-hint">Adds a matte/frame around the layout. Content scales to fit inside. Frame image fills the border area.</p>
+            </div>
+            <div class="modal-section">
+                <h3>Overlay</h3>
+                <div class="settings-row">
+                    <label>Edge trim</label>
+                    <input type="number" id="setting-edge-trim" value="0" min="0" max="10" step="1" style="width:50px;">
+                    <span>px — trims edges off pasted overlay images</span>
+                </div>
             </div>
             <div class="modal-section">
                 <h3>Layout</h3>
@@ -172,6 +190,45 @@
             <h3>Overlays <span id="overlay-count" class="photo-count"></span></h3>
             <div id="overlay-list" class="overlay-list"></div>
             <p class="hint">Paste (<kbd>Ctrl+V</kbd>) to add overlay</p>
+            <div style="margin-top:6px;">
+                <button id="enter-text-mode-btn">+ Create Text Overlay</button>
+            </div>
+
+            <!-- Text overlay edit mode (hidden until activated) -->
+            <div id="text-ov-editor" style="display:none; margin-top:8px; border-top:1px solid #0f3460; padding-top:8px;">
+                <h3 style="font-size:12px;color:#4CAF50;margin-bottom:6px;">TEXT OVERLAY MODE</h3>
+                <textarea id="text-ov-content" style="width:100%;min-height:50px;background:#0f3460;border:1px solid #1a1a4e;color:#e0e0e0;padding:6px;border-radius:3px;font-size:13px;resize:vertical;font-family:inherit;" placeholder="Type your text here..."></textarea>
+                <div class="ov-prop-row" style="margin-top:4px;">
+                    <label>Font</label>
+                    <select id="text-ov-font" style="flex:1;">
+                        <option value="Arial">Arial</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Impact">Impact</option>
+                        <option value="Palatino">Palatino</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Trebuchet MS">Trebuchet</option>
+                        <option value="Comic Sans MS">Comic Sans</option>
+                        <option value="Courier New">Courier</option>
+                        <option value="Brush Script MT">Brush Script</option>
+                    </select>
+                </div>
+                <div class="ov-prop-row">
+                    <label>Size (pt)</label>
+                    <input type="number" id="text-ov-size" value="48" min="12" max="200" step="1" style="width:55px;">
+                    <label style="min-width:auto;">Color</label>
+                    <input type="color" id="text-ov-color" value="#000000">
+                </div>
+                <div class="ov-prop-row">
+                    <label>Bold</label>
+                    <input type="checkbox" id="text-ov-bold" checked style="accent-color:#e94560;">
+                    <label style="min-width:auto;">Italic</label>
+                    <input type="checkbox" id="text-ov-italic" style="accent-color:#e94560;">
+                </div>
+                <div style="margin-top:6px; display:flex; gap:4px;">
+                    <button id="create-text-ov-btn" style="flex:1; background:#4CAF50; border-color:#4CAF50; color:#fff;">Create Overlay</button>
+                    <button id="cancel-text-ov-btn" style="flex:1;">Cancel</button>
+                </div>
+            </div>
         </div>
 
         <div class="section" id="overlay-props-section" style="display:none;">
@@ -199,8 +256,9 @@
                 </select>
                 <input type="color" id="ov-fill" value="#ffffff">
             </div>
-            <div style="margin-top: 8px;">
-                <button id="delete-overlay-btn" class="btn-danger">Delete Overlay</button>
+            <div style="margin-top: 8px; display:flex; gap:4px;">
+                <button id="export-overlay-btn" style="flex:1;">Export Source PNG</button>
+                <button id="delete-overlay-btn" class="btn-danger" style="flex:1;">Delete</button>
             </div>
         </div>
 
@@ -240,6 +298,15 @@
             <div class="drop-overlay-icon">&#128247;</div>
             <div class="drop-overlay-text">Drop photos to add</div>
         </div>
+    </div>
+
+    <!-- Drop zone hint tooltip -->
+    <div id="drop-zone-hint" style="display:none;position:fixed;z-index:10002;background:rgba(0,0,0,0.85);color:#fff;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:500;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>
+
+    <!-- Hover preview tooltip -->
+    <div class="img-preview-tip" id="img-preview-tip">
+        <canvas id="preview-canvas" width="150" height="150"></canvas>
+        <div class="preview-label" id="preview-label"></div>
     </div>
 
     <!-- Status bar -->
@@ -323,9 +390,15 @@
                  locked: false };
     }
 
-    function createCollage(pw, ph, dpi, pm, gm) {
+    function createCollage(pw, ph, dpi, margins, gm) {
+        // margins: { top, bottom, left, right } or single number for uniform
+        var m = (typeof margins === 'number')
+            ? { top: margins, bottom: margins, left: margins, right: margins }
+            : margins;
         return { paperWidth: pw, paperHeight: ph, dpi: dpi,
-                 perimeterMargin: pm, gutterMargin: gm, cells: [] };
+                 marginTop: m.top, marginBottom: m.bottom,
+                 marginLeft: m.left, marginRight: m.right,
+                 gutterMargin: gm, cells: [] };
     }
 
     function computeDefaultFit(cell, natW, natH, dpi) {
@@ -344,10 +417,14 @@
     var selectedOverlayId = null;
     var dropTargetCellId = null;
     var dropZone = null; // 'replace' | 'above' | 'below' | 'left' | 'right'
+    var dropZoneKeyOverride = null; // keyboard-forced zone during drag
+    var isDraggingOver = false;
     var tabFlashTimer = null;
     var tabFlashCellId = null;
     var tabFlashOvId = null;
     var selectedUnassignedImgId = null; // tracks selected image not in any cell
+    var identifyMode = false;
+    var textOverlayMode = false;
     var frameOffsetPx = 0;    // frame offset in CSS pixels for coordinate conversion
     var frameContentScale = 1; // content scale factor when frame is active
 
@@ -368,9 +445,13 @@
     // ========================================================================
     var MIN_CELL_SIZE = 0.75;
 
-    function generateLayout(pw, ph, pm, gm, n) {
+    function generateLayout(pw, ph, margins, gm, n) {
         var equalSizes = document.getElementById('setting-equal-sizes').checked;
-        var usable = { x: pm, y: pm, width: pw - 2*pm, height: ph - 2*pm };
+        var usable = {
+            x: margins.left, y: margins.top,
+            width: pw - margins.left - margins.right,
+            height: ph - margins.top - margins.bottom
+        };
         var rects = equalSizes ? gridLayout(usable, n, gm) : bspSplit(usable, n, gm);
         return rects.map(function(r) { return createCell(r.x, r.y, r.width, r.height); });
     }
@@ -679,6 +760,48 @@
             }
         }
 
+        // Identity mode: draw big numbers on cells
+        if (identifyMode && !isExport) {
+            for (var i = 0; i < collage.cells.length; i++) {
+                var cell = collage.cells[i];
+                var cx = cell.x * collage.dpi * scale, cy = cell.y * collage.dpi * scale;
+                var cw = cell.width * collage.dpi * scale, ch = cell.height * collage.dpi * scale;
+                var num = String(i + 1);
+                var fontSize = Math.min(cw * 0.5, ch * 0.5, 80);
+                ctx.save();
+                ctx.font = 'bold ' + fontSize + 'px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Dark semi-transparent backdrop
+                var tw = ctx.measureText(num).width + 20;
+                var th = fontSize + 10;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(cx + (cw - tw) / 2, cy + (ch - th) / 2, tw, th);
+                // White number
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(num, cx + cw / 2, cy + ch / 2);
+                ctx.restore();
+            }
+            // Also number overlays
+            for (var i = 0; i < overlays.length; i++) {
+                var ov = overlays[i];
+                var oox = Math.round(ov.x * collage.dpi * scale), ooy = Math.round(ov.y * collage.dpi * scale);
+                var oow = Math.round(ov.width * collage.dpi * scale), ooh = Math.round(ov.height * collage.dpi * scale);
+                var label = 'OV' + (i + 1);
+                var fs = Math.min(oow * 0.4, ooh * 0.4, 40);
+                ctx.save();
+                ctx.font = 'bold ' + fs + 'px sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                var ltw = ctx.measureText(label).width + 12;
+                var lth = fs + 8;
+                ctx.fillStyle = 'rgba(156,39,176,0.7)';
+                ctx.fillRect(oox + (oow - ltw) / 2, ooy + (ooh - lth) / 2, ltw, lth);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(label, oox + oow / 2, ooy + ooh / 2);
+                ctx.restore();
+            }
+        }
+
         // Whitespace drop preview
         if (!isExport && dropWhitespaceRect) {
             var wr = dropWhitespaceRect;
@@ -698,6 +821,11 @@
             ctx.restore();
         }
 
+        // Text overlay live preview
+        if (textOverlayMode && !isExport) {
+            renderTextOverlayPreview(ctx, collage.dpi, scale);
+        }
+
         // Overlays — draw in reverse order (last in list = drawn first/bottom)
         renderOverlays(ctx, collage.dpi, scale, imgMgr, selOvId, isExport);
 
@@ -710,6 +838,82 @@
         if (fw > 0) {
             ctx.restore();
         }
+    }
+
+    function renderTextOverlayPreview(ctx, dpi, scale) {
+        var text = document.getElementById('text-ov-content').value;
+        var isEmpty = !text.trim();
+        if (isEmpty) text = 'Type your text...';
+
+        var font = document.getElementById('text-ov-font').value;
+        var size = parseInt(document.getElementById('text-ov-size').value) || 48;
+        var color = document.getElementById('text-ov-color').value;
+        var bold = document.getElementById('text-ov-bold').checked;
+        var italic = document.getElementById('text-ov-italic').checked;
+
+        // Preview at 3x the actual overlay rendering size for visibility
+        var previewScale = 3;
+        var renderSize = size * scale * previewScale;
+        var fontStr = (italic ? 'italic ' : '') + (bold ? 'bold ' : '') + renderSize + 'px "' + font + '"';
+        ctx.font = fontStr;
+
+        var lines = text.split('\n');
+        var lineHeight = renderSize * 1.3;
+        var maxWidth = 0;
+        for (var i = 0; i < lines.length; i++) {
+            var w = ctx.measureText(lines[i] || ' ').width;
+            if (w > maxWidth) maxWidth = w;
+        }
+
+        var padding = renderSize * 0.3;
+        var boxW = maxWidth + padding * 2;
+        var boxH = lines.length * lineHeight + padding * 2;
+
+        // Center on paper
+        var pw = collage.paperWidth * dpi * scale;
+        var ph = collage.paperHeight * dpi * scale;
+        // Clamp to fit within the canvas
+        if (boxW > pw * 0.95) { boxW = pw * 0.95; }
+        if (boxH > ph * 0.95) { boxH = ph * 0.95; }
+        var bx = (pw - boxW) / 2;
+        var by = (ph - boxH) / 2;
+
+        ctx.save();
+
+        // Semi-transparent background box
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.strokeStyle = '#4CAF50';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 4]);
+        ctx.fillRect(bx, by, boxW, boxH);
+        ctx.strokeRect(bx, by, boxW, boxH);
+        ctx.setLineDash([]);
+
+        // Draw text
+        ctx.font = fontStr;
+        ctx.fillStyle = isEmpty ? '#999' : color;
+        ctx.textBaseline = 'top';
+        for (var i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], bx + padding, by + padding + i * lineHeight);
+        }
+
+        // Mode label
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillStyle = '#4CAF50';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('TEXT OVERLAY PREVIEW — edit in sidebar, click Create when done', pw / 2, by - 6);
+        ctx.textAlign = 'start';
+
+        // Size hint
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('Shown at ' + previewScale + 'x actual size — final overlay will be smaller', pw / 2, by + boxH + 6);
+        ctx.textAlign = 'start';
+
+        ctx.restore();
     }
 
     function renderOverlays(ctx, dpi, scale, imgMgr, selOvId, isExport) {
@@ -733,7 +937,7 @@
                 ctx.fillRect(ox, oy, ow, oh);
             }
 
-            // Draw image into overlay rect (inset by padding), using source-rect to avoid clip artifacts
+            // Draw image into overlay rect (inset by padding)
             var img = imgMgr ? imgMgr.get(ov.imageId) : null;
             if (img) {
                 var imgX = ox + pad, imgY = oy + pad;
@@ -741,32 +945,42 @@
                 if (imgW > 0 && imgH > 0) {
                     var bmp = (scale < 0.5 && !isExport) ? img.thumbnail : img.fullBitmap;
                     var bw = bmp.width, bh = bmp.height;
-                    // Cover-fit: scale image to fill the overlay area
-                    var isc = Math.max(imgW / bw, imgH / bh);
-                    // Source rect: what portion of the bitmap to draw
-                    // Inset by 0.5px to avoid edge interpolation artifacts
-                    var sx = Math.max(0, (bw - imgW / isc) / 2 + 0.5);
-                    var sy = Math.max(0, (bh - imgH / isc) / 2 + 0.5);
-                    var sw = Math.min(bw - sx, imgW / isc - 1);
-                    var sh = Math.min(bh - sy, imgH / isc - 1);
-                    ctx.drawImage(bmp, sx, sy, sw, sh, imgX, imgY, imgW, imgH);
+                    // Apply edge trim to source bitmap bounds
+                    var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
+                    var tbw = Math.max(1, bw - trim * 2);
+                    var tbh = Math.max(1, bh - trim * 2);
+                    // Cover-fit: compute source region from trimmed bounds
+                    var isc = Math.max(imgW / tbw, imgH / tbh);
+                    var cropW = Math.round(imgW / isc), cropH = Math.round(imgH / isc);
+                    var sx = trim + Math.round((tbw - cropW) / 2);
+                    var sy = trim + Math.round((tbh - cropH) / 2);
+                    // Render to temp canvas to avoid drawImage edge interpolation artifacts
+                    var tc = document.createElement('canvas');
+                    tc.width = cropW; tc.height = cropH;
+                    var tctx = tc.getContext('2d');
+                    tctx.drawImage(bmp, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
+                    ctx.drawImage(tc, imgX, imgY, imgW, imgH);
                 }
             }
 
             ctx.restore();
+        }
 
-            // Outline and resize handles (screen only, not in export)
-            if (!isExport) {
+        // Draw overlay selection UI in a completely separate pass (screen only)
+        if (!isExport) {
+            for (var i = 0; i < overlays.length; i++) {
+                var ov = overlays[i];
                 var isSel = (ov.id === selOvId);
                 var isFlash = (tabFlashOvId !== null && ov.id === tabFlashOvId);
+                if (!isSel && !isFlash) continue;
 
-                // Only draw outline for selected or flashing overlays
-                if (isSel || isFlash) {
-                    var outlineColor = isFlash ? '#4CAF50' : '#2196F3';
-                    ctx.strokeStyle = outlineColor;
-                    ctx.lineWidth = isFlash ? 4 : 2.5;
-                    ctx.strokeRect(ox, oy, ow, oh);
-                }
+                var sox = Math.round(ov.x * dpi * scale), soy = Math.round(ov.y * dpi * scale);
+                var sow = Math.round(ov.width * dpi * scale), soh = Math.round(ov.height * dpi * scale);
+
+                var outlineColor = isFlash ? '#4CAF50' : '#2196F3';
+                ctx.strokeStyle = outlineColor;
+                ctx.lineWidth = isFlash ? 4 : 2.5;
+                ctx.strokeRect(sox + 0.5, soy + 0.5, sow - 1, soh - 1);
 
                 if (isSel) {
                     var hs = 5;
@@ -774,26 +988,26 @@
                     ctx.fillStyle = handleColor;
                     ctx.strokeStyle = '#fff';
                     ctx.lineWidth = 1;
-                    var corners = [[ox,oy],[ox+ow,oy],[ox,oy+oh],[ox+ow,oy+oh]];
+                    var corners = [[sox,soy],[sox+sow,soy],[sox,soy+soh],[sox+sow,soy+soh]];
                     for (var ci = 0; ci < corners.length; ci++) {
                         ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
                         ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
                     }
 
-                    // Label badge on selected overlay
+                    // Label badge
                     var badgeText = 'OVERLAY';
-                    var badgeFont = Math.max(9, Math.min(12, ow / 10));
+                    var badgeFont = Math.max(9, Math.min(12, sow / 10));
                     ctx.font = 'bold ' + badgeFont + 'px sans-serif';
                     var bw = ctx.measureText(badgeText).width + 8;
                     var bh = badgeFont + 6;
                     ctx.fillStyle = handleColor;
                     ctx.globalAlpha = 0.85;
-                    ctx.fillRect(ox, oy - bh - 2, bw, bh);
+                    ctx.fillRect(sox, soy - bh - 2, bw, bh);
                     ctx.globalAlpha = 1;
                     ctx.fillStyle = '#fff';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'top';
-                    ctx.fillText(badgeText, ox + 4, oy - bh);
+                    ctx.fillText(badgeText, sox + 4, soy - bh);
                 }
             }
         }
@@ -1222,12 +1436,10 @@
             if (this.state === ST_DRAG_CELL) {
                 var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
                 if (cell) {
-                    var pm = this.collage.perimeterMargin;
-                    cell.x = Math.max(pm, this.d2i(dx) - this.dragCellOffX);
-                    cell.y = Math.max(pm, this.d2i(dy) - this.dragCellOffY);
-                    // Keep within paper bounds
-                    cell.x = Math.min(cell.x, this.collage.paperWidth - pm - cell.width);
-                    cell.y = Math.min(cell.y, this.collage.paperHeight - pm - cell.height);
+                    cell.x = Math.max(this.collage.marginLeft, this.d2i(dx) - this.dragCellOffX);
+                    cell.y = Math.max(this.collage.marginTop, this.d2i(dy) - this.dragCellOffY);
+                    cell.x = Math.min(cell.x, this.collage.paperWidth - this.collage.marginRight - cell.width);
+                    cell.y = Math.min(cell.y, this.collage.paperHeight - this.collage.marginBottom - cell.height);
                     this.onChange();
                 }
                 return;
@@ -1645,7 +1857,8 @@
                 paperWidth: collage.paperWidth,
                 paperHeight: collage.paperHeight,
                 dpi: collage.dpi,
-                perimeterMargin: collage.perimeterMargin,
+                marginTop: collage.marginTop, marginBottom: collage.marginBottom,
+                marginLeft: collage.marginLeft, marginRight: collage.marginRight,
                 gutterMargin: collage.gutterMargin,
                 cells: collage.cells.map(function(c) {
                     return {
@@ -1671,7 +1884,8 @@
                 stackResize: document.getElementById('setting-stack-resize').value,
                 frameWidth: parseFloat(document.getElementById('setting-frame-width').value) || 0,
                 frameColor: document.getElementById('setting-frame-color').value,
-                frameImageId: document.getElementById('setting-frame-image').value || null
+                frameImageId: document.getElementById('setting-frame-image').value || null,
+                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0
             }
         };
 
@@ -1688,11 +1902,127 @@
         updateStatus('Project saved (' + sizeMB + ' MB)');
     }
 
+    async function createShareableProject(collage, imgMgr) {
+        if (typeof JSZip === 'undefined') {
+            updateStatus('Error: JSZip library not loaded. Check internet connection.');
+            return;
+        }
+        updateStatus('Creating shareable project...');
+
+        var zip = new JSZip();
+        var imgFolder = zip.folder('images');
+
+        // Export each image as a file in the ZIP, using sanitized unique filenames
+        var allImages = imgMgr.getAll();
+        var fileNameMap = {}; // imageId → filename in ZIP
+        var usedNames = {};
+
+        for (var i = 0; i < allImages.length; i++) {
+            var img = allImages[i];
+            // Create a unique filename
+            var baseName = (img.fileName || 'image').replace(/[^a-zA-Z0-9._-]/g, '_');
+            var name = baseName;
+            var counter = 1;
+            while (usedNames[name]) {
+                var dot = baseName.lastIndexOf('.');
+                if (dot > 0) {
+                    name = baseName.substring(0, dot) + '_' + counter + baseName.substring(dot);
+                } else {
+                    name = baseName + '_' + counter;
+                }
+                counter++;
+            }
+            usedNames[name] = true;
+            fileNameMap[img.id] = name;
+
+            // Get image data as blob from the stored file
+            var dataURL = await fileToDataURL(img.file);
+            var base64 = dataURL.split(',')[1];
+            imgFolder.file(name, base64, { base64: true });
+        }
+
+        // Build project JSON with filenames instead of embedded data
+        var project = {
+            version: 2,
+            shareable: true,
+            collage: {
+                paperWidth: collage.paperWidth,
+                paperHeight: collage.paperHeight,
+                dpi: collage.dpi,
+                marginTop: collage.marginTop, marginBottom: collage.marginBottom,
+                marginLeft: collage.marginLeft, marginRight: collage.marginRight,
+                gutterMargin: collage.gutterMargin,
+                cells: collage.cells.map(function(c) {
+                    return {
+                        id: c.id, x: c.x, y: c.y, width: c.width, height: c.height,
+                        imageFile: fileNameMap[c.imageId] || null,
+                        imageOffsetX: c.imageOffsetX, imageOffsetY: c.imageOffsetY,
+                        imageScale: c.imageScale,
+                        locked: c.locked || false
+                    };
+                })
+            },
+            overlays: overlays.map(function(ov) {
+                return {
+                    id: ov.id, imageFile: fileNameMap[ov.imageId] || null,
+                    x: ov.x, y: ov.y, width: ov.width, height: ov.height,
+                    mode: ov.mode, fillColor: ov.fillColor,
+                    locked: ov.locked || false,
+                    padding: ov.padding || 0
+                };
+            }),
+            images: Object.keys(fileNameMap).map(function(id) {
+                var img = imgMgr.get(id);
+                return {
+                    file: fileNameMap[id],
+                    enabled: img ? img.enabled : true
+                };
+            }),
+            settings: {
+                stackResize: document.getElementById('setting-stack-resize').value,
+                frameWidth: parseFloat(document.getElementById('setting-frame-width').value) || 0,
+                frameColor: document.getElementById('setting-frame-color').value,
+                frameImageFile: fileNameMap[document.getElementById('setting-frame-image').value] || null,
+                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0
+            }
+        };
+
+        zip.file('project.collage', JSON.stringify(project, null, 2));
+
+        // Generate ZIP
+        var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'collage-project-' + collage.paperWidth + 'x' + collage.paperHeight + '.zip';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        var sizeMB = (blob.size / 1048576).toFixed(1);
+        updateStatus('Shareable project saved (' + sizeMB + ' MB) — ' + allImages.length + ' images bundled');
+    }
+
     async function loadProject(file) {
         updateStatus('Loading project...');
         try {
-            var text = await file.text();
-            var project = JSON.parse(text);
+            var project, zipImages = null;
+
+            // Detect ZIP vs JSON
+            if (file.name.endsWith('.zip') || file.type === 'application/zip') {
+                if (typeof JSZip === 'undefined') {
+                    throw new Error('JSZip library not loaded. Check internet connection.');
+                }
+                var zip = await JSZip.loadAsync(file);
+                var projectFile = zip.file('project.collage');
+                if (!projectFile) throw new Error('No project.collage found in ZIP');
+                var text = await projectFile.async('string');
+                project = JSON.parse(text);
+                zipImages = zip.folder('images');
+            } else {
+                var text = await file.text();
+                project = JSON.parse(text);
+            }
+
             if (!project.version || !project.collage) {
                 throw new Error('Invalid project file');
             }
@@ -1704,27 +2034,56 @@
 
             // Load images
             var idMap = {}; // old id → new id
-            var imageEntries = Object.entries(project.images);
-            for (var i = 0; i < imageEntries.length; i++) {
-                var oldId = imageEntries[i][0];
-                var imgData = imageEntries[i][1];
-                var blob = dataURLtoBlob(imgData.dataURL);
-                var imgFile = new File([blob], imgData.fileName, { type: blob.type });
-                var newIds = await imageManager.loadFiles([imgFile]);
-                var newId = newIds[0];
-                // Update the id in the map
-                idMap[oldId] = newId;
-                imageManager.setEnabled(newId, imgData.enabled);
+            var fileToIdMap = {}; // filename → new id (for shareable format)
+
+            if (project.shareable && zipImages) {
+                // Shareable format: load from ZIP files
+                var imgList = project.images; // array of { file, enabled }
+                for (var i = 0; i < imgList.length; i++) {
+                    var entry = imgList[i];
+                    var zipFile = zipImages.file(entry.file);
+                    if (!zipFile) continue;
+                    var blob = await zipFile.async('blob');
+                    var imgFile = new File([blob], entry.file, { type: blob.type || 'image/png' });
+                    var newIds = await imageManager.loadFiles([imgFile]);
+                    var newId = newIds[0];
+                    fileToIdMap[entry.file] = newId;
+                    imageManager.setEnabled(newId, entry.enabled);
+                }
+            } else {
+                // Embedded format: load from base64 data URLs
+                var imageEntries = Object.entries(project.images);
+                for (var i = 0; i < imageEntries.length; i++) {
+                    var oldId = imageEntries[i][0];
+                    var imgData = imageEntries[i][1];
+                    var blob = dataURLtoBlob(imgData.dataURL);
+                    var imgFile = new File([blob], imgData.fileName, { type: blob.type });
+                    var newIds = await imageManager.loadFiles([imgFile]);
+                    var newId = newIds[0];
+                    idMap[oldId] = newId;
+                    imageManager.setEnabled(newId, imgData.enabled);
+                }
+            }
+
+            // Helper to resolve image references
+            function resolveImageId(oldId, fileName) {
+                if (fileName && fileToIdMap[fileName]) return fileToIdMap[fileName];
+                if (oldId && idMap[oldId]) return idMap[oldId];
+                return oldId;
             }
 
             // Rebuild collage
             var pc = project.collage;
+            // Support old single-margin format and new 4-margin format
+            var loadMargins = pc.marginTop !== undefined
+                ? { top: pc.marginTop, bottom: pc.marginBottom, left: pc.marginLeft, right: pc.marginRight }
+                : (pc.perimeterMargin || 0.25);
             collage = createCollage(pc.paperWidth, pc.paperHeight, pc.dpi,
-                                     pc.perimeterMargin, pc.gutterMargin);
+                                     loadMargins, pc.gutterMargin);
             nextCellId = 0;
             collage.cells = pc.cells.map(function(c) {
                 var cell = createCell(c.x, c.y, c.width, c.height);
-                cell.imageId = idMap[c.imageId] || c.imageId;
+                cell.imageId = resolveImageId(c.imageId, c.imageFile);
                 cell.imageOffsetX = c.imageOffsetX;
                 cell.imageOffsetY = c.imageOffsetY;
                 cell.imageScale = c.imageScale;
@@ -1735,8 +2094,8 @@
             // Rebuild overlays
             nextOverlayId = 0;
             overlays = project.overlays.map(function(ov) {
-                var newOv = createOverlay(idMap[ov.imageId] || ov.imageId,
-                                          ov.x, ov.y, ov.width, ov.height);
+                var resolvedId = resolveImageId(ov.imageId, ov.imageFile);
+                var newOv = createOverlay(resolvedId, ov.x, ov.y, ov.width, ov.height);
                 newOv.mode = ov.mode;
                 newOv.fillColor = ov.fillColor;
                 newOv.locked = ov.locked || false;
@@ -1755,11 +2114,13 @@
                 }
                 if (project.settings.frameImageId) {
                     // Map old image ID to new one
-                    var mappedId = idMap[project.settings.frameImageId] || project.settings.frameImageId;
-                    // Will be set after renderFileList populates the dropdown
+                    var mappedId = resolveImageId(project.settings.frameImageId, project.settings.frameImageFile);
                     setTimeout(function() {
                         document.getElementById('setting-frame-image').value = mappedId;
                     }, 0);
+                }
+                if (project.settings.edgeTrim !== undefined) {
+                    document.getElementById('setting-edge-trim').value = project.settings.edgeTrim;
                 }
             }
 
@@ -1777,7 +2138,10 @@
                 document.getElementById('custom-dims').style.display = 'flex';
             }
             document.getElementById('dpi').value = pc.dpi;
-            document.getElementById('perimeter-margin').value = pc.perimeterMargin;
+            document.getElementById('margin-top').value = collage.marginTop;
+            document.getElementById('margin-bottom').value = collage.marginBottom;
+            document.getElementById('margin-left').value = collage.marginLeft;
+            document.getElementById('margin-right').value = collage.marginRight;
             document.getElementById('gutter-margin').value = pc.gutterMargin;
 
             // Rebuild interaction
@@ -1799,6 +2163,8 @@
             refreshBtn.disabled = false;
             resizeModeBtn.disabled = false;
             exportBtn.disabled = false;
+            document.getElementById('identify-btn').disabled = false;
+            document.getElementById('share-btn').disabled = false;
 
             updateStatus('Project loaded — ' + collage.cells.length + ' cells, ' +
                           overlays.length + ' overlays, ' + imageManager.count() + ' images');
@@ -1819,7 +2185,7 @@
     var dirty = true;
 
     var fileInput, paperSelect, customDims, paperWidthInput, paperHeightInput;
-    var dpiInput, perimeterInput, gutterInput;
+    var dpiInput, gutterInput;
     var generateBtn, randomizeBtn, refreshBtn, exportBtn, resizeModeBtn;
     var statusBar, cellInfo, scaleSlider, resetCropBtn, zoomInput;
     var imagePropsSection;
@@ -1835,7 +2201,6 @@
         paperWidthInput = document.getElementById('paper-width');
         paperHeightInput = document.getElementById('paper-height');
         dpiInput = document.getElementById('dpi');
-        perimeterInput = document.getElementById('perimeter-margin');
         gutterInput = document.getElementById('gutter-margin');
         generateBtn = document.getElementById('generate-btn');
         randomizeBtn = document.getElementById('randomize-btn');
@@ -1866,6 +2231,21 @@
         exportBtn.addEventListener('click', onExport);
         // Tools menu
         var toolsMenu = document.getElementById('tools-menu');
+        // Identify mode
+        var identifyBtn = document.getElementById('identify-btn');
+        var identifyTimer = null;
+        identifyBtn.addEventListener('click', function() {
+            identifyMode = true;
+            dirty = true;
+            identifyBtn.classList.add('active-toggle');
+            if (identifyTimer) clearTimeout(identifyTimer);
+            identifyTimer = setTimeout(function() {
+                identifyMode = false;
+                identifyBtn.classList.remove('active-toggle');
+                dirty = true;
+            }, 5000);
+        });
+
         document.getElementById('tools-btn').addEventListener('click', function(e) {
             e.stopPropagation();
             toolsMenu.style.display = toolsMenu.style.display === 'none' ? '' : 'none';
@@ -1881,6 +2261,9 @@
         });
         document.getElementById('save-btn').addEventListener('click', function() {
             if (collage) saveProject(collage, imageManager);
+        });
+        document.getElementById('share-btn').addEventListener('click', function() {
+            if (collage) createShareableProject(collage, imageManager);
         });
         document.getElementById('load-btn').addEventListener('click', function() {
             document.getElementById('load-input').click();
@@ -1969,6 +2352,149 @@
         document.getElementById('ov-mode').addEventListener('change', onOverlayPropChange);
         document.getElementById('ov-fill').addEventListener('input', onOverlayPropChange);
         document.getElementById('delete-overlay-btn').addEventListener('click', onDeleteOverlay);
+        document.getElementById('export-overlay-btn').addEventListener('click', function() {
+            if (selectedOverlayId === null) return;
+            var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+            if (!ov) return;
+            var img = imageManager.get(ov.imageId);
+            if (!img) return;
+            // Draw the raw source bitmap to a canvas and export as PNG (preserving alpha)
+            var bmp = img.fullBitmap;
+            var tc = document.createElement('canvas');
+            tc.width = bmp.width; tc.height = bmp.height;
+            var tctx = tc.getContext('2d');
+            tctx.drawImage(bmp, 0, 0);
+            tc.toBlob(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'overlay-source-' + ov.id + '.png';
+                a.click();
+                URL.revokeObjectURL(url);
+                updateStatus('Exported raw overlay source (' + bmp.width + 'x' + bmp.height + 'px) as PNG');
+            }, 'image/png');
+        });
+
+        // Text overlay mode: enter
+        document.getElementById('enter-text-mode-btn').addEventListener('click', function() {
+            textOverlayMode = true;
+            document.getElementById('text-ov-editor').style.display = '';
+            document.getElementById('enter-text-mode-btn').style.display = 'none';
+            document.getElementById('text-ov-content').value = '';
+            document.getElementById('text-ov-content').focus();
+            dirty = true;
+            updateStatus('Text overlay mode — type text, adjust font/size, then click Create Overlay.');
+        });
+
+        // Text overlay mode: cancel
+        document.getElementById('cancel-text-ov-btn').addEventListener('click', function() {
+            textOverlayMode = false;
+            document.getElementById('text-ov-editor').style.display = 'none';
+            document.getElementById('enter-text-mode-btn').style.display = '';
+            dirty = true;
+            updateStatus('Text overlay cancelled.');
+        });
+
+        // Live preview: redraw on any text/style change
+        ['text-ov-content', 'text-ov-font', 'text-ov-size', 'text-ov-color', 'text-ov-bold', 'text-ov-italic'].forEach(function(id) {
+            var el = document.getElementById(id);
+            el.addEventListener('input', function() { if (textOverlayMode) dirty = true; });
+            el.addEventListener('change', function() { if (textOverlayMode) dirty = true; });
+        });
+
+        // Text overlay mode: create
+        document.getElementById('create-text-ov-btn').addEventListener('click', async function() {
+            var text = document.getElementById('text-ov-content').value.trim();
+            if (!text) { updateStatus('Enter text first.'); return; }
+
+            var font = document.getElementById('text-ov-font').value;
+            var size = parseInt(document.getElementById('text-ov-size').value) || 48;
+            var color = document.getElementById('text-ov-color').value;
+            var bold = document.getElementById('text-ov-bold').checked;
+            var italic = document.getElementById('text-ov-italic').checked;
+
+            // Render text to an offscreen canvas with transparency
+            var dpi = collage ? collage.dpi : 300;
+            var fontStr = (italic ? 'italic ' : '') + (bold ? 'bold ' : '') + size + 'px "' + font + '"';
+
+            // Measure text
+            var measureCanvas = document.createElement('canvas');
+            measureCanvas.width = 1; measureCanvas.height = 1;
+            var mctx = measureCanvas.getContext('2d');
+            mctx.font = fontStr;
+
+            var lines = text.split('\n');
+            var lineHeight = size * 1.3;
+            var maxWidth = 0;
+            for (var i = 0; i < lines.length; i++) {
+                var w = mctx.measureText(lines[i]).width;
+                if (w > maxWidth) maxWidth = w;
+            }
+
+            var padding = Math.round(size * 0.3);
+            var canvasW = Math.round(maxWidth + padding * 2);
+            var canvasH = Math.round(lines.length * lineHeight + padding * 2);
+
+            // Draw text
+            var tc = document.createElement('canvas');
+            tc.width = canvasW; tc.height = canvasH;
+            var tctx = tc.getContext('2d');
+            // Transparent background (don't fill)
+            tctx.font = fontStr;
+            tctx.fillStyle = color;
+            tctx.textBaseline = 'top';
+            for (var i = 0; i < lines.length; i++) {
+                tctx.fillText(lines[i], padding, padding + i * lineHeight);
+            }
+
+            // Convert to blob and load into ImageManager
+            var blob = await new Promise(function(resolve) { tc.toBlob(resolve, 'image/png'); });
+            var file = new File([blob], 'text-overlay.png', { type: 'image/png' });
+            var ids = await imageManager.loadFiles([file]);
+            var imgId = ids[0];
+            var img = imageManager.get(imgId);
+
+            // Create overlay — size in inches based on DPI
+            if (!collage) {
+                // Auto-create collage if needed
+                var d = getPaperDimensions(), pw = d[0], ph = d[1];
+                var margins = getMargins();
+                var gm = parseFloat(gutterInput.value) || 0.125;
+                collage = createCollage(pw, ph, dpi, margins, gm);
+                collage.cells = [];
+                interaction = new InteractionManager(collage, imageManager, function() { dirty = true; updateCellInfo(); });
+                interaction.setDisplayInfo(displayScale, collage.dpi);
+                generateBtn.disabled = false;
+                randomizeBtn.disabled = false;
+                refreshBtn.disabled = false;
+                resizeModeBtn.disabled = false;
+                exportBtn.disabled = false;
+                document.getElementById('identify-btn').disabled = false;
+            document.getElementById('share-btn').disabled = false;
+                updateDropPlaceholder();
+            }
+
+            var ovW = canvasW / dpi;
+            var ovH = canvasH / dpi;
+            var ovX = (collage.paperWidth - ovW) / 2;
+            var ovY = (collage.paperHeight - ovH) / 2;
+            var ov = createOverlay(imgId, ovX, ovY, ovW, ovH);
+            overlays.push(ov);
+            selectedOverlayId = ov.id;
+            if (interaction) interaction.selectedCellId = null;
+            selectedUnassignedImgId = null;
+            dirty = true;
+            renderFileList();
+            renderOverlayList();
+            updateOverlayProps();
+            updateCellInfo();
+            document.getElementById('overlays-section').style.display = '';
+            // Exit text mode
+            textOverlayMode = false;
+            document.getElementById('text-ov-editor').style.display = 'none';
+            document.getElementById('enter-text-mode-btn').style.display = '';
+            updateStatus('Text overlay created: "' + text.substring(0, 30) + (text.length > 30 ? '...' : '') + '"');
+        });
 
         // Keyboard shortcuts for overlays and cells
         var MOVE_STEP = 0.25; // inches per arrow key press
@@ -1977,6 +2503,15 @@
             if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
 
             var key = e.key;
+
+            // During drag-over: arrow keys and space override drop zone
+            if (isDraggingOver && dropTargetCellId !== null) {
+                if (key === ' ') { e.preventDefault(); dropZoneKeyOverride = 'replace'; dirty = true; return; }
+                if (key === 'ArrowUp') { e.preventDefault(); dropZoneKeyOverride = 'above'; dirty = true; return; }
+                if (key === 'ArrowDown') { e.preventDefault(); dropZoneKeyOverride = 'below'; dirty = true; return; }
+                if (key === 'ArrowLeft') { e.preventDefault(); dropZoneKeyOverride = 'left'; dirty = true; return; }
+                if (key === 'ArrowRight') { e.preventDefault(); dropZoneKeyOverride = 'right'; dirty = true; return; }
+            }
 
             // TAB — cycle through cells
             if (key === 'Tab' && collage && collage.cells.length > 0) {
@@ -2117,7 +2652,7 @@
             settingsModal.classList.add('visible');
         });
         // Frame settings trigger redraw
-        ['setting-frame-width', 'setting-frame-color', 'setting-frame-image'].forEach(function(id) {
+        ['setting-frame-width', 'setting-frame-color', 'setting-frame-image', 'setting-edge-trim'].forEach(function(id) {
             var el = document.getElementById(id);
             el.addEventListener('input', function() { dirty = true; });
             el.addEventListener('change', function() { dirty = true; });
@@ -2265,23 +2800,34 @@
         }
     }
 
+    function getMargins() {
+        return {
+            top: parseFloat(document.getElementById('margin-top').value) || 0.25,
+            bottom: parseFloat(document.getElementById('margin-bottom').value) || 0.25,
+            left: parseFloat(document.getElementById('margin-left').value) || 0.25,
+            right: parseFloat(document.getElementById('margin-right').value) || 0.25
+        };
+    }
+
     function buildCollage() {
         var d = getPaperDimensions(), pw = d[0], ph = d[1];
         var dpi = parseInt(dpiInput.value) || 300;
-        var pm = parseFloat(perimeterInput.value) || 0.25;
+        var margins = getMargins();
         var gm = parseFloat(gutterInput.value) || 0.125;
         var n = imageManager.enabledCount();
 
         if (n === 0) { updateStatus('No enabled photos. Check some in the list.'); return; }
 
-        collage = createCollage(pw, ph, dpi, pm, gm);
-        collage.cells = generateLayout(pw, ph, pm, gm, n);
+        collage = createCollage(pw, ph, dpi, margins, gm);
+        collage.cells = generateLayout(pw, ph, margins, gm, n);
         assignImages();
         interaction = new InteractionManager(collage, imageManager, function() { dirty = true; });
         randomizeBtn.disabled = false;
         refreshBtn.disabled = false;
         resizeModeBtn.disabled = false;
         exportBtn.disabled = false;
+        document.getElementById('identify-btn').disabled = false;
+            document.getElementById('share-btn').disabled = false;
         dirty = true;
         updateModeBadge();
         updateDropPlaceholder();
@@ -2499,6 +3045,35 @@
             });
         }
 
+        // Hover preview on file items
+        var previewTip = document.getElementById('img-preview-tip');
+        var previewCanvas = document.getElementById('preview-canvas');
+        var previewLabel = document.getElementById('preview-label');
+        var allFileItems = list.querySelectorAll('.file-item');
+        for (var i = 0; i < allFileItems.length; i++) {
+            allFileItems[i].addEventListener('mouseenter', function(e) {
+                var imgId = this.getAttribute('data-id');
+                var img = imageManager.get(imgId);
+                if (!img) return;
+                var bmp = img.thumbnail;
+                var pw = 150, ph = 150;
+                var aspect = bmp.width / bmp.height;
+                if (aspect > 1) { ph = Math.round(pw / aspect); }
+                else { pw = Math.round(ph * aspect); }
+                previewCanvas.width = pw; previewCanvas.height = ph;
+                var pctx = previewCanvas.getContext('2d');
+                pctx.drawImage(bmp, 0, 0, pw, ph);
+                previewLabel.textContent = img.fileName + ' (' + img.naturalWidth + '×' + img.naturalHeight + ')';
+                previewTip.style.display = 'block';
+                var rect = this.getBoundingClientRect();
+                previewTip.style.left = (rect.right + 8) + 'px';
+                previewTip.style.top = Math.max(4, rect.top - 40) + 'px';
+            });
+            allFileItems[i].addEventListener('mouseleave', function() {
+                previewTip.style.display = 'none';
+            });
+        }
+
         // Update frame image dropdown
         var frameSel = document.getElementById('setting-frame-image');
         var frameVal = frameSel.value;
@@ -2516,8 +3091,9 @@
         var imgId = e.target.getAttribute('data-img-id');
         var enabled = e.target.checked;
         imageManager.setEnabled(imgId, enabled);
-        renderFileList();
-        updateStatus(imageManager.enabledCount() + ' of ' + imageManager.count() + ' photos enabled. Click Generate to update layout.');
+        if (collage) onRefresh();
+        else renderFileList();
+        updateStatus(imageManager.enabledCount() + ' of ' + imageManager.count() + ' photos enabled.');
     }
 
     function onRemovePhoto() {
@@ -2581,7 +3157,6 @@
         imageManager.setEnabled(imgId, true);
 
         // Find whitespace to place it, or create a default cell
-        var pm = collage.perimeterMargin;
         var gap = collage.gutterMargin;
         var cx = collage.paperWidth / 2, cy = collage.paperHeight / 2;
         var wsRect = findWhitespaceRect(cx, cy);
@@ -2630,33 +3205,46 @@
     // Track whitespace drop rect for rendering
     var dropWhitespaceRect = null; // {x,y,width,height} in inches, or null
 
+    var dropHintLabels = {
+        replace: 'Replace (Space)',
+        above: '↑ Insert Above (Up)',
+        below: '↓ Insert Below (Down)',
+        left: '← Insert Left (Left)',
+        right: '→ Insert Right (Right)',
+        whitespace: 'Drop in open area'
+    };
+
     function onCanvasDragOver(e) {
         if (!interaction || !collage) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'copy';
+        isDraggingOver = true;
+
         var c = getCanvasCoords(e);
         var cell = interaction.hitTestCell(c[0], c[1]);
         var newTarget = cell ? cell.id : null;
         var newZone = null;
         var newWhitespace = null;
         if (cell) {
-            // Determine drop zone based on cursor position within cell
-            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
-            var relX = (ix - cell.x) / cell.width;  // 0..1
-            var relY = (iy - cell.y) / cell.height;  // 0..1
-            var edgeThreshold = 0.25;
-            if (relY < edgeThreshold) newZone = 'above';
-            else if (relY > 1 - edgeThreshold) newZone = 'below';
-            else if (relX < edgeThreshold) newZone = 'left';
-            else if (relX > 1 - edgeThreshold) newZone = 'right';
-            else newZone = 'replace';
+            if (dropZoneKeyOverride) {
+                // Keyboard override takes priority
+                newZone = dropZoneKeyOverride;
+            } else {
+                var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+                var relX = (ix - cell.x) / cell.width;
+                var relY = (iy - cell.y) / cell.height;
+                var edgeThreshold = 0.25;
+                if (relY < edgeThreshold) newZone = 'above';
+                else if (relY > 1 - edgeThreshold) newZone = 'below';
+                else if (relX < edgeThreshold) newZone = 'left';
+                else if (relX > 1 - edgeThreshold) newZone = 'right';
+                else newZone = 'replace';
+            }
         } else {
-            // Check if we're in usable whitespace (not in margin)
             var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
-            var pm = collage.perimeterMargin;
-            if (ix >= pm && ix <= collage.paperWidth - pm &&
-                iy >= pm && iy <= collage.paperHeight - pm) {
+            if (ix >= collage.marginLeft && ix <= collage.paperWidth - collage.marginRight &&
+                iy >= collage.marginTop && iy <= collage.paperHeight - collage.marginBottom) {
                 var wsRect = findWhitespaceRect(ix, iy);
                 if (wsRect && wsRect.width >= MIN_CELL_SIZE && wsRect.height >= MIN_CELL_SIZE) {
                     newWhitespace = wsRect;
@@ -2670,16 +3258,26 @@
             dropWhitespaceRect = newWhitespace;
             dirty = true;
         }
+
+        // Show floating hint near cursor
+        var hint = document.getElementById('drop-zone-hint');
+        if (newZone && dropHintLabels[newZone]) {
+            hint.textContent = dropHintLabels[newZone];
+            hint.style.display = 'block';
+            hint.style.left = (e.clientX + 20) + 'px';
+            hint.style.top = (e.clientY - 10) + 'px';
+        } else {
+            hint.style.display = 'none';
+        }
     }
 
     // Find the largest rectangle of whitespace around point (ix, iy)
     // that doesn't overlap any existing cell. Returns 80% fill rect.
     function findWhitespaceRect(ix, iy) {
-        var pm = collage.perimeterMargin;
         var gap = collage.gutterMargin;
         // Start with the full usable area
-        var left = pm, right = collage.paperWidth - pm;
-        var top = pm, bottom = collage.paperHeight - pm;
+        var left = collage.marginLeft, right = collage.paperWidth - collage.marginRight;
+        var top = collage.marginTop, bottom = collage.paperHeight - collage.marginBottom;
 
         // Constrain by each existing cell
         for (var i = 0; i < collage.cells.length; i++) {
@@ -2721,6 +3319,9 @@
 
     function onCanvasDragLeave(e) {
         e.stopPropagation();
+        isDraggingOver = false;
+        dropZoneKeyOverride = null;
+        document.getElementById('drop-zone-hint').style.display = 'none';
         if (dropTargetCellId !== null || dropZone !== null || dropWhitespaceRect !== null) {
             dropTargetCellId = null;
             dropZone = null;
@@ -2733,6 +3334,9 @@
         e.preventDefault();
         e.stopPropagation();
         document.getElementById('drop-overlay').classList.remove('visible');
+        document.getElementById('drop-zone-hint').style.display = 'none';
+        isDraggingOver = false;
+        dropZoneKeyOverride = null;
         var targetId = dropTargetCellId;
         var zone = dropZone;
         var wsRect = dropWhitespaceRect;
@@ -2858,12 +3462,20 @@
                 pw = parseFloat(parts[0]); ph = parseFloat(parts[1]);
             }
             var dpi = parseInt(document.getElementById('dpi').value) || 300;
-            var pm = parseFloat(document.getElementById('perimeter-margin').value) || 0.25;
+            var margins = getMargins();
             var gm = parseFloat(document.getElementById('gutter-margin').value) || 0.125;
-            collage = createCollage(pw, ph, dpi, pm, gm);
+            collage = createCollage(pw, ph, dpi, margins, gm);
             collage.cells = [];
             interaction = new InteractionManager(collage, imageManager, function() { dirty = true; updateCellInfo(); });
             interaction.setDisplayInfo(displayScale, collage.dpi);
+            generateBtn.disabled = false;
+            randomizeBtn.disabled = false;
+            refreshBtn.disabled = false;
+            resizeModeBtn.disabled = false;
+            exportBtn.disabled = false;
+            document.getElementById('identify-btn').disabled = false;
+            document.getElementById('share-btn').disabled = false;
+            updateDropPlaceholder();
             dirty = true;
         }
         // Don't intercept paste when user is actively typing in a text input
@@ -2984,6 +3596,44 @@
                 }
                 dirty = true;
                 renderOverlayList();
+            });
+        }
+
+        // Hover preview on overlay items
+        var previewTip = document.getElementById('img-preview-tip');
+        var previewCanvas = document.getElementById('preview-canvas');
+        var previewLabel = document.getElementById('preview-label');
+        var ovItems = list.querySelectorAll('.overlay-item');
+        for (var i = 0; i < ovItems.length; i++) {
+            ovItems[i].addEventListener('mouseenter', function(e) {
+                var ovId = parseInt(this.getAttribute('data-ov-id'));
+                var ov = overlays.find(function(o) { return o.id === ovId; });
+                if (!ov) return;
+                var img = imageManager.get(ov.imageId);
+                if (!img) return;
+                var bmp = img.thumbnail;
+                var pw = 150, ph = 150;
+                var aspect = bmp.width / bmp.height;
+                if (aspect > 1) { ph = Math.round(pw / aspect); }
+                else { pw = Math.round(ph * aspect); }
+                previewCanvas.width = pw; previewCanvas.height = ph;
+                var pctx = previewCanvas.getContext('2d');
+                // Checkerboard background to show transparency
+                for (var cy = 0; cy < ph; cy += 8) {
+                    for (var cx = 0; cx < pw; cx += 8) {
+                        pctx.fillStyle = ((cx + cy) % 16 === 0) ? '#e0e0e0' : '#ffffff';
+                        pctx.fillRect(cx, cy, 8, 8);
+                    }
+                }
+                pctx.drawImage(bmp, 0, 0, pw, ph);
+                previewLabel.textContent = img.fileName + ' (' + img.naturalWidth + '×' + img.naturalHeight + ')';
+                previewTip.style.display = 'block';
+                var rect = this.getBoundingClientRect();
+                previewTip.style.left = (rect.right + 8) + 'px';
+                previewTip.style.top = Math.max(4, rect.top - 40) + 'px';
+            });
+            ovItems[i].addEventListener('mouseleave', function() {
+                previewTip.style.display = 'none';
             });
         }
     }
@@ -3219,14 +3869,13 @@
 
     function resizeCanvas() {
         var cont = canvas.parentElement;
-        var style = getComputedStyle(cont);
-        var padX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
-        var padY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-        var cw = cont.clientWidth - padX;
-        var ch = cont.clientHeight - padY;
+        var cw = cont.clientWidth;
+        var ch = cont.clientHeight;
         var dpr = window.devicePixelRatio || 1;
         var ppw = collage.paperWidth * collage.dpi, pph = collage.paperHeight * collage.dpi;
-        displayScale = Math.min(cw / ppw, ch / pph);
+        // Fit canvas with uniform margin on all sides
+        var maxW = cw * 0.92, maxH = ch * 0.92;
+        displayScale = Math.min(maxW / ppw, maxH / pph);
         var dw = ppw * displayScale, dh = pph * displayScale;
         canvas.width = dw * dpr; canvas.height = dh * dpr;
         canvas.style.width = dw + 'px'; canvas.style.height = dh + 'px';
