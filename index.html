@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collage - Photo Layout Tool</title>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
     <!-- Menu Bar -->
@@ -31,7 +31,8 @@
             <button class="menu-btn">Layout ▾</button>
             <div class="menu-panel">
                 <div class="menu-item" id="generate-btn">Generate Layout</div>
-                <div class="menu-item" id="randomize-btn">Randomize</div>
+                <div class="menu-item" id="generate-fixed-btn">Fixed Size Layout</div>
+                <div class="menu-item" id="randomize-btn">Generate Random Layout</div>
                 <div class="menu-item" id="refresh-btn">Refresh</div>
                 <div class="menu-divider"></div>
                 <div class="menu-item" id="settings-btn">Page Settings...</div>
@@ -54,14 +55,15 @@
     <!-- Settings dialog -->
     <div class="modal-backdrop" id="settings-modal">
         <div class="modal">
-            <h2>Settings</h2>
+            <h2>Page &amp; Layout Settings</h2>
             <div class="settings-row">
-                <label>Paper</label>
+                <label>Page size</label>
                 <select id="paper-size">
                     <option value="11x14">11" &times; 14"</option>
                     <option value="11x17">11" &times; 17"</option>
                     <option value="8.5x11">8.5" &times; 11"</option>
                     <option value="13x19">13" &times; 19"</option>
+                    <option value="9x6">9" &times; 6"</option>
                     <option value="custom">Custom...</option>
                 </select>
             </div>
@@ -75,35 +77,33 @@
                 <label>DPI</label>
                 <input type="number" id="dpi" value="300" min="72" max="600" step="1">
             </div>
-            <div class="settings-row">
-                <label>Margins</label>
-                <span style="font-size:11px;color:#a0a0c0;">T</span>
-                <input type="number" id="margin-top" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
-                <span style="font-size:11px;color:#a0a0c0;">B</span>
-                <input type="number" id="margin-bottom" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
-                <span style="font-size:11px;color:#a0a0c0;">L</span>
-                <input type="number" id="margin-left" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
-                <span style="font-size:11px;color:#a0a0c0;">R</span>
-                <input type="number" id="margin-right" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
-            </div>
-            <div class="settings-row">
-                <label>Gap</label>
-                <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
-            </div>
-            <div class="settings-row">
-                <label>Scale</label>
-                <input type="range" id="layout-scale" min="25" max="100" value="100" style="width:100px;accent-color:#e94560;">
-                <span id="layout-scale-val" style="font-size:11px;color:#e0e0e0;">100%</span>
+            <div class="modal-section">
+                <h3>Margins</h3>
+                <p class="modal-hint" style="margin-bottom:6px;">Define layout inset from page edges. Also adjustable via Scale mode Layout Inset slider.</p>
+                <div class="settings-row">
+                    <span style="font-size:11px;color:#a0a0c0;">T</span>
+                    <input type="number" id="margin-top" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                    <span style="font-size:11px;color:#a0a0c0;">B</span>
+                    <input type="number" id="margin-bottom" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                    <span style="font-size:11px;color:#a0a0c0;">L</span>
+                    <input type="number" id="margin-left" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                    <span style="font-size:11px;color:#a0a0c0;">R</span>
+                    <input type="number" id="margin-right" value="0.25" min="0" max="4" step="0.0625" style="width:55px;">
+                </div>
+                <div class="settings-row">
+                    <label>Cell gap</label>
+                    <input type="number" id="gutter-margin" value="0.125" min="0" max="2" step="0.0625">
+                </div>
             </div>
             <div class="modal-section">
-                <h3>Layout</h3>
+                <h3>Layout Generation</h3>
                 <div class="settings-row">
                     <label>Equal sizes</label>
                     <input type="checkbox" id="setting-equal-sizes" checked style="accent-color:#e94560;">
                     <span>Make all cells equal size</span>
                 </div>
                 <div class="settings-row">
-                    <label>Stack resize</label>
+                    <label>+/- resize</label>
                     <select id="setting-stack-resize">
                         <option value="single">Selected element only</option>
                         <option value="row-col" selected>Entire row / column</option>
@@ -118,7 +118,7 @@
                     <span>px — clip edges of pasted images</span>
                 </div>
             </div>
-            <!-- Hidden elements for backwards compat -->
+            <!-- LEGACY (pre-2026-03-23): hidden frame compat elements -->
             <input type="hidden" id="setting-frame-width" value="0">
             <input type="hidden" id="setting-frame-color" value="#ffffff">
             <select id="setting-frame-image" style="display:none;"><option value=""></option></select>
@@ -230,7 +230,8 @@
                         <button id="add-to-layout-btn" style="flex:1;">Add to Layout</button>
                     </div>
                     <div style="margin-top:4px;">
-                        <button id="remove-photo-btn" class="btn-danger">Remove Photo</button>
+                        <button id="remove-photo-btn" class="btn-danger" style="flex:1;">Remove</button>
+                        <button id="convert-to-overlay-btn" style="flex:1;">→ Overlay</button>
                     </div>
                 </div>
 
@@ -260,6 +261,7 @@
                     </div>
                     <div style="margin-top:8px; display:flex; gap:4px;">
                         <button id="export-overlay-btn" style="flex:1;">Export PNG</button>
+                        <button id="convert-to-cell-btn" style="flex:1;">→ Cell</button>
                         <button id="delete-overlay-btn" class="btn-danger" style="flex:1;">Delete</button>
                     </div>
                 </div>
@@ -300,6 +302,33 @@
                         <input type="file" id="border-image-input" accept="image/*" style="display:none;">
                         <span id="border-image-name" style="font-size:10px;color:#a0a0c0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;">None</span>
                     </div>
+                    <div id="border-drop-zone" class="file-drop-zone" style="margin-top:4px;padding:8px;font-size:11px;">
+                        <span class="file-drop-text">Drop background image here</span>
+                    </div>
+                    <div class="ov-prop-row" style="margin-top:6px;">
+                        <label>Fill layout</label>
+                        <input type="checkbox" id="border-fill-layout" style="accent-color:#4CAF50;">
+                        <span style="font-size:10px;color:#a0a0c0;">Extend image into layout area</span>
+                    </div>
+                    <div class="ov-prop-row">
+                        <label>Inner</label>
+                        <select id="border-inner-mode" style="flex:1;">
+                            <option value="auto">Auto (use margins)</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div id="border-inner-custom" style="display:none;">
+                        <div class="ov-prop-row">
+                            <label>Inner pos</label>
+                            <input type="number" id="border-ix" step="0.0625" min="0" style="width:55px;"> <span>x</span>
+                            <input type="number" id="border-iy" step="0.0625" min="0" style="width:55px;">
+                        </div>
+                        <div class="ov-prop-row">
+                            <label>Inner size</label>
+                            <input type="number" id="border-iw" step="0.0625" min="0.5" style="width:55px;"> <span>x</span>
+                            <input type="number" id="border-ih" step="0.0625" min="0.5" style="width:55px;">
+                        </div>
+                    </div>
                     <div style="margin-top:8px;">
                         <button id="delete-border-btn" class="btn-danger">Delete Border</button>
                     </div>
@@ -311,6 +340,7 @@
     <!-- Canvas area with mode bar -->
     <div class="canvas-container" id="canvas-container">
         <div class="canvas-mode-bar">
+            <!-- Object visibility -->
             <div style="display:flex;align-items:center;gap:3px;">
                 <span style="color:#a0a0c0;font-size:11px;">Objects:</span>
                 <button id="mode-cells-btn" class="mode-bar-btn active-toggle" style="background:#4CAF50;border-color:#4CAF50;color:#fff;"><span class="vis-dot">✓</span> Photo <span class="obj-count-label" id="count-cells">(0)</span></button>
@@ -318,9 +348,65 @@
                 <button id="mode-borders-btn" class="mode-bar-btn active-toggle" style="background:#FF9800;border-color:#FF9800;color:#fff;"><span class="vis-dot">✓</span> Border <span class="obj-count-label" id="count-borders">(0)</span></button>
             </div>
             <div class="separator" style="height:16px;"></div>
-            <button id="resize-mode-btn" class="mode-bar-btn" disabled>Resize</button>
-            <div id="mode-badge" class="mode-badge mode-normal" style="margin:0;font-size:10px;padding:2px 8px;">LAYOUT</div>
-            <p class="hint" id="mode-hint" style="margin:0;font-size:10px;"></p>
+            <!-- Canvas mode selector -->
+            <div style="display:flex;align-items:center;gap:3px;">
+                <span style="color:#a0a0c0;font-size:11px;">Mode:</span>
+                <div class="menu-dropdown">
+                    <button class="mode-bar-btn active-toggle" id="content-mode-btn" style="font-size:11px;">Content ▾</button>
+                    <div class="menu-panel" style="min-width:160px;">
+                        <div class="menu-item canvas-mode-item" data-submode="select">✓ Select / Edit</div>
+                        <div class="menu-item canvas-mode-item" data-submode="insert">&nbsp;&nbsp;Insert</div>
+                        <div class="menu-divider"></div>
+                        <div class="menu-item canvas-mode-item" data-submode="edge-resize">&nbsp;&nbsp;Edge Resize</div>
+                    </div>
+                </div>
+                <button class="mode-bar-btn" id="align-mode-btn" style="font-size:11px;">Align</button>
+                <button class="mode-bar-btn" id="size-mode-btn" style="font-size:11px;">Size</button>
+                <button class="mode-bar-btn" id="scale-mode-btn" style="font-size:11px;">Scale</button>
+            </div>
+            <div class="separator" style="height:16px;"></div>
+            <!-- Align tools (shown only in Align mode) -->
+            <div id="align-tools" style="display:none;display:flex;align-items:center;gap:2px;">
+                <button class="mode-bar-btn align-btn" id="snap-top" title="Align tops" style="font-size:10px;padding:2px 6px;">⬆T</button>
+                <button class="mode-bar-btn align-btn" id="snap-bottom" title="Align bottoms" style="font-size:10px;padding:2px 6px;">⬇B</button>
+                <button class="mode-bar-btn align-btn" id="snap-left" title="Align lefts" style="font-size:10px;padding:2px 6px;">⬅L</button>
+                <button class="mode-bar-btn align-btn" id="snap-right" title="Align rights" style="font-size:10px;padding:2px 6px;">➡R</button>
+                <button class="mode-bar-btn" id="clear-selection-btn" style="font-size:10px;padding:2px 6px;">Clear</button>
+                <span id="align-count" style="font-size:10px;color:#a0a0c0;"></span>
+            </div>
+            <!-- Size tools (shown only in Size mode) -->
+            <div id="size-tools" style="display:none;align-items:center;gap:2px;">
+                <button class="mode-bar-btn" id="equal-heights-btn" title="Make heights equal" style="font-size:10px;padding:2px 6px;">↕H</button>
+                <button class="mode-bar-btn" id="equal-widths-btn" title="Make widths equal" style="font-size:10px;padding:2px 6px;">↔W</button>
+                <button class="mode-bar-btn" id="clear-size-sel-btn" style="font-size:10px;padding:2px 6px;">Clear</button>
+                <span id="size-count" style="font-size:10px;color:#a0a0c0;"></span>
+            </div>
+            <!-- Scale controls (shown only in Scale mode) -->
+            <div id="scale-tools" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span id="scale-hint" style="font-size:11px;color:#64C8FF;">Load photos or a project first</span>
+                <div class="separator" style="height:16px;"></div>
+                <span style="font-size:11px;color:#a0a0c0;">Output:</span>
+                <select id="page-size-quick" style="font-size:11px;background:#0f3460;border:1px solid #1a1a4e;color:#e0e0e0;padding:2px 4px;border-radius:3px;">
+                    <option value="11x14">11×14"</option>
+                    <option value="11x17">11×17"</option>
+                    <option value="8.5x11">8.5×11"</option>
+                    <option value="13x19">13×19"</option>
+                    <option value="9x6">9×6"</option>
+                    <option value="custom">Custom...</option>
+                </select>
+                <input type="range" id="layout-scale" min="25" max="100" value="100" style="width:70px;accent-color:#e94560;">
+                <span id="layout-scale-val" style="font-size:10px;color:#e0e0e0;">100%</span>
+            </div>
+            <!-- LEGACY: hidden inset input for save/load compat -->
+            <input type="hidden" id="layout-inset" value="0">
+            <span id="layout-inset-val" style="display:none;"></span>
+            <!-- Mode indicator -->
+            <div id="mode-badge" class="mode-badge mode-normal" style="margin:0 0 0 auto;font-size:10px;padding:2px 8px;">SELECT</div>
+            <!-- Help button -->
+            <button id="help-btn" class="mode-bar-btn" style="font-size:11px;padding:2px 8px;" title="What can I do?">?</button>
+        </div>
+        <!-- Context help panel -->
+        <div id="help-panel" style="display:none;position:absolute;top:30px;right:10px;z-index:300;background:#16213e;border:1px solid #0f3460;border-radius:6px;padding:10px 14px;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,0.5);font-size:11px;color:#a0a0c0;line-height:1.6;">
         </div>
         <canvas id="collage-canvas" tabindex="0"></canvas>
         <div class="drop-placeholder" id="drop-placeholder">
@@ -460,7 +546,10 @@
 
     // Drawing group visibility and edit mode
     var showBorders = true, showCells = true, showOverlays = true;
-    var editMode = 'cells'; // 'cells' | 'overlays' | 'borders'
+    var editMode = 'cells'; // legacy — kept for compat
+    var canvasMode = 'content'; // 'content' | 'align' | 'scale'
+    var contentSubMode = 'select'; // 'select' | 'insert' | 'edge-resize'
+    var selectedCellGroup = new Set(); // multi-select for align mode
     var dropTargetCellId = null;
     var dropZone = null; // 'replace' | 'above' | 'below' | 'left' | 'right'
     var dropZoneKeyOverride = null; // keyboard-forced zone during drag
@@ -471,8 +560,12 @@
     var selectedUnassignedImgId = null; // tracks selected image not in any cell
     var identifyMode = false;
     var textOverlayMode = false;
-    var frameOffsetPx = 0;    // frame offset in CSS pixels for coordinate conversion
-    var frameContentScale = 1; // content scale factor when frame is active
+    // Layout box drag state (Scale mode)
+    var layoutBoxDrag = null; // null or { edge: 'top'|'bottom'|'left'|'right'|'move', startMargins: {...}, startX, startY }
+
+    // LEGACY (pre-2026-03-23): frame offset vars — kept for coordinate compat, always 0/1 now
+    var frameOffsetPx = 0;
+    var frameContentScale = 1;
 
     function createOverlay(imageId, x, y, w, h) {
         return {
@@ -482,7 +575,10 @@
             mode: 'transparent',  // 'transparent' | 'filled'
             fillColor: '#ffffff',
             locked: false,        // fix position — block move/resize
-            padding: 0            // white margin inside frame, in inches
+            padding: 0,           // white margin inside frame, in inches
+            imageOffsetX: 0,      // pan offset in source pixels
+            imageOffsetY: 0,
+            imageScale: 0         // 0 = auto cover-fit
         };
     }
 
@@ -491,12 +587,56 @@
             id: nextBorderObjId++,
             imageId: imageId,
             x: x, y: y, width: w, height: h,
+            innerMode: 'auto',   // 'auto' (use margins) | 'custom'
+            innerX: 0, innerY: 0, innerWidth: 0, innerHeight: 0, // used when innerMode='custom'
+            fillLayout: false,   // true = fill entire paper (no inner cutout)
             mode: 'filled',
             fillColor: '#ffffff',
             opacity: 1.0,
             locked: false,
             padding: 0,
             label: 'Border ' + nextBorderObjId
+        };
+    }
+
+    // Compute effective inner rect for a border object
+    function getBorderInnerRect(bo) {
+        if (bo.innerMode === 'custom') {
+            return { x: bo.innerX, y: bo.innerY, width: bo.innerWidth, height: bo.innerHeight };
+        }
+        // Auto: use margins relative to the border's outer rect
+        var margins = typeof getMargins === 'function' ? getMargins() : { top: 0.25, bottom: 0.25, left: 0.25, right: 0.25 };
+        return {
+            x: bo.x + margins.left,
+            y: bo.y + margins.top,
+            width: bo.width - margins.left - margins.right,
+            height: bo.height - margins.top - margins.bottom
+        };
+    }
+
+    // Compute the Layout Bounding Box — the area where cells should be placed
+    function getLayoutBoundingBox() {
+        if (!collage) return null;
+        // If borders exist, use the innermost border's inner rect
+        if (borderObjs.length > 0) {
+            var smallest = null;
+            var smallestArea = Infinity;
+            for (var i = 0; i < borderObjs.length; i++) {
+                var inner = getBorderInnerRect(borderObjs[i]);
+                if (inner.width > 0 && inner.height > 0) {
+                    var area = inner.width * inner.height;
+                    if (area < smallestArea) { smallestArea = area; smallest = inner; }
+                }
+            }
+            if (smallest) return smallest;
+        }
+        // Fallback: paper minus margins
+        var margins = typeof getMargins === 'function' ? getMargins() : { top: 0.25, bottom: 0.25, left: 0.25, right: 0.25 };
+        return {
+            x: margins.left,
+            y: margins.top,
+            width: collage.paperWidth - margins.left - margins.right,
+            height: collage.paperHeight - margins.top - margins.bottom
         };
     }
 
@@ -507,7 +647,9 @@
 
     function generateLayout(pw, ph, margins, gm, n) {
         var equalSizes = document.getElementById('setting-equal-sizes').checked;
-        var usable = {
+        // Use Layout Bounding Box if borders define one, otherwise use margins
+        var lbb = getLayoutBoundingBox();
+        var usable = lbb || {
             x: margins.left, y: margins.top,
             width: pw - margins.left - margins.right,
             height: ph - margins.top - margins.bottom
@@ -745,6 +887,8 @@
     // ========================================================================
     // Renderer
     // ========================================================================
+    // LEGACY (pre-2026-03-23): getFrameSettings — no longer used, frame replaced by borderObjs
+    // Retained for potential future migration needs
     function getFrameSettings() {
         return {
             width: parseFloat(document.getElementById('setting-frame-width').value) || 0,
@@ -768,6 +912,68 @@
         // === LAYER 1: Border objects (drawn first, behind everything) ===
         if (showBorders || isExport) {
             renderBorderObjs(ctx, dpi, scale, imgMgr, isExport);
+        }
+
+        // Layout Bounding Box guide (screen only)
+        if (!isExport) {
+            var lbb = getLayoutBoundingBox();
+            if (lbb) {
+                var lx = Math.round(lbb.x * dpi * scale);
+                var ly = Math.round(lbb.y * dpi * scale);
+                var lw = Math.round(lbb.width * dpi * scale);
+                var lh = Math.round(lbb.height * dpi * scale);
+                ctx.save();
+                if (canvasMode === 'scale') {
+                    // Interactive: thick solid blue box with edge handles
+                    ctx.strokeStyle = '#64C8FF';
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeRect(lx, ly, lw, lh);
+                    // Semi-transparent fill outside the box to show the "frame" area
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+                    ctx.fillRect(0, 0, w, ly); // top
+                    ctx.fillRect(0, ly + lh, w, h - ly - lh); // bottom
+                    ctx.fillRect(0, ly, lx, lh); // left
+                    ctx.fillRect(lx + lw, ly, w - lx - lw, lh); // right
+                    // Edge midpoint handles
+                    var ehs = 6;
+                    ctx.fillStyle = '#64C8FF';
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 1;
+                    var edgeHandles = [
+                        { x: lx + lw/2, y: ly, edge: 'top' },
+                        { x: lx + lw/2, y: ly + lh, edge: 'bottom' },
+                        { x: lx, y: ly + lh/2, edge: 'left' },
+                        { x: lx + lw, y: ly + lh/2, edge: 'right' }
+                    ];
+                    for (var eh = 0; eh < edgeHandles.length; eh++) {
+                        var hx = edgeHandles[eh].x, hy = edgeHandles[eh].y;
+                        if (edgeHandles[eh].edge === 'top' || edgeHandles[eh].edge === 'bottom') {
+                            ctx.fillRect(hx - ehs*2, hy - ehs/2, ehs*4, ehs);
+                        } else {
+                            ctx.fillRect(hx - ehs/2, hy - ehs*2, ehs, ehs*4);
+                        }
+                        ctx.strokeRect(hx - (edgeHandles[eh].edge === 'top' || edgeHandles[eh].edge === 'bottom' ? ehs*2 : ehs/2),
+                                       hy - (edgeHandles[eh].edge === 'top' || edgeHandles[eh].edge === 'bottom' ? ehs/2 : ehs*2),
+                                       edgeHandles[eh].edge === 'top' || edgeHandles[eh].edge === 'bottom' ? ehs*4 : ehs,
+                                       edgeHandles[eh].edge === 'top' || edgeHandles[eh].edge === 'bottom' ? ehs : ehs*4);
+                    }
+                    // Label
+                    ctx.font = '10px sans-serif';
+                    ctx.fillStyle = '#64C8FF';
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+                    var mt = collage.marginTop.toFixed(2), mb = collage.marginBottom.toFixed(2);
+                    var ml = collage.marginLeft.toFixed(2), mr = collage.marginRight.toFixed(2);
+                    ctx.fillText('Layout area  T:' + mt + '" B:' + mb + '" L:' + ml + '" R:' + mr + '"', lx, ly - 4);
+                } else {
+                    // Passive: light dashed guide
+                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([8, 4]);
+                    ctx.strokeRect(lx, ly, lw, lh);
+                    ctx.setLineDash([]);
+                }
+                ctx.restore();
+            }
         }
 
         // === LAYER 2: Cell objects (image content) ===
@@ -957,21 +1163,41 @@
             var bx = Math.round(bo.x * dpi * scale), by = Math.round(bo.y * dpi * scale);
             var bw = Math.round(bo.width * dpi * scale), bh = Math.round(bo.height * dpi * scale);
 
+            // Compute inner rect (the cutout)
+            var inner = getBorderInnerRect(bo);
+            var ix = Math.round(inner.x * dpi * scale), iy = Math.round(inner.y * dpi * scale);
+            var iw = Math.round(inner.width * dpi * scale), ih = Math.round(inner.height * dpi * scale);
+
             ctx.save();
             ctx.globalAlpha = bo.opacity !== undefined ? bo.opacity : 1;
 
+            // Clip to frame shape
+            ctx.beginPath();
+            ctx.rect(bx, by, bw, bh); // outer
+            if (!bo.fillLayout) {
+                // Cut out inner rect (evenodd) — only if not filling layout area
+                ctx.moveTo(ix, iy);
+                ctx.lineTo(ix, iy + ih);
+                ctx.lineTo(ix + iw, iy + ih);
+                ctx.lineTo(ix + iw, iy);
+                ctx.closePath();
+            }
+            ctx.clip('evenodd');
+
+            // Fill the frame area
             if (bo.mode === 'filled' && !bo.imageId) {
                 ctx.fillStyle = bo.fillColor;
                 ctx.fillRect(bx, by, bw, bh);
             }
 
+            // Draw image in frame area
             var img = imgMgr ? imgMgr.get(bo.imageId) : null;
             if (img) {
                 var bmp = (scale < 0.5 && !isExport) ? img.thumbnail : img.fullBitmap;
-                var iw = bmp.width, ih = bmp.height;
-                var isc = Math.max(bw / iw, bh / ih);
+                var sw = bmp.width, sh = bmp.height;
+                var isc = Math.max(bw / sw, bh / sh);
                 var cropW = Math.round(bw / isc), cropH = Math.round(bh / isc);
-                var sx = Math.round((iw - cropW) / 2), sy = Math.round((ih - cropH) / 2);
+                var sx = Math.round((sw - cropW) / 2), sy = Math.round((sh - cropH) / 2);
                 var tc = document.createElement('canvas');
                 tc.width = cropW; tc.height = cropH;
                 var tctx = tc.getContext('2d');
@@ -985,9 +1211,17 @@
             if (!isExport) {
                 var isSel = (bo.id === selectedBorderObjId);
                 if (isSel) {
+                    // Outer rect
                     ctx.strokeStyle = '#FF9800';
                     ctx.lineWidth = 2.5;
                     ctx.strokeRect(bx + 0.5, by + 0.5, bw - 1, bh - 1);
+                    // Inner rect (dashed)
+                    ctx.setLineDash([4, 3]);
+                    ctx.strokeStyle = '#FF9800';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(ix + 0.5, iy + 0.5, iw - 1, ih - 1);
+                    ctx.setLineDash([]);
+                    // Outer corner handles
                     var hs = 5;
                     ctx.fillStyle = '#FF9800';
                     ctx.strokeStyle = '#fff';
@@ -996,6 +1230,14 @@
                     for (var ci = 0; ci < corners.length; ci++) {
                         ctx.fillRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
                         ctx.strokeRect(corners[ci][0]-hs, corners[ci][1]-hs, hs*2, hs*2);
+                    }
+                    // Inner corner handles (smaller, different color)
+                    var ihs = 4;
+                    ctx.fillStyle = '#FFC107';
+                    var iCorners = [[ix,iy],[ix+iw,iy],[ix,iy+ih],[ix+iw,iy+ih]];
+                    for (var ci = 0; ci < iCorners.length; ci++) {
+                        ctx.fillRect(iCorners[ci][0]-ihs, iCorners[ci][1]-ihs, ihs*2, ihs*2);
+                        ctx.strokeRect(iCorners[ci][0]-ihs, iCorners[ci][1]-ihs, ihs*2, ihs*2);
                     }
                     ctx.font = 'bold 11px sans-serif';
                     ctx.fillStyle = '#FF9800';
@@ -1027,7 +1269,7 @@
                 ctx.fillRect(ox, oy, ow, oh);
             }
 
-            // Draw image into overlay rect (inset by padding)
+            // Draw image into overlay rect with pan/zoom support
             var img = imgMgr ? imgMgr.get(ov.imageId) : null;
             if (img) {
                 var imgX = ox + pad, imgY = oy + pad;
@@ -1035,21 +1277,30 @@
                 if (imgW > 0 && imgH > 0) {
                     var bmp = (scale < 0.5 && !isExport) ? img.thumbnail : img.fullBitmap;
                     var bw = bmp.width, bh = bmp.height;
-                    // Apply edge trim to source bitmap bounds
                     var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
-                    var tbw = Math.max(1, bw - trim * 2);
-                    var tbh = Math.max(1, bh - trim * 2);
-                    // Cover-fit: compute source region from trimmed bounds
-                    var isc = Math.max(imgW / tbw, imgH / tbh);
-                    var cropW = Math.round(imgW / isc), cropH = Math.round(imgH / isc);
-                    var sx = trim + Math.round((tbw - cropW) / 2);
-                    var sy = trim + Math.round((tbh - cropH) / 2);
-                    // Render to temp canvas to avoid drawImage edge interpolation artifacts
-                    var tc = document.createElement('canvas');
-                    tc.width = cropW; tc.height = cropH;
-                    var tctx = tc.getContext('2d');
-                    tctx.drawImage(bmp, sx, sy, cropW, cropH, 0, 0, cropW, cropH);
-                    ctx.drawImage(tc, imgX, imgY, imgW, imgH);
+                    var srcW = bw - trim * 2, srcH = bh - trim * 2;
+
+                    // Compute effective scale (0 = auto cover-fit)
+                    var ovScale = ov.imageScale;
+                    if (!ovScale || ovScale <= 0) {
+                        var ovPxW = ov.width * dpi, ovPxH = ov.height * dpi;
+                        ovScale = Math.max(ovPxW / srcW, ovPxH / srcH);
+                    }
+
+                    // Clip to overlay bounds
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(imgX, imgY, imgW, imgH);
+                    ctx.clip();
+
+                    // Draw with pan/zoom (same approach as cell rendering)
+                    var imgSc = ovScale * scale;
+                    var drawW = srcW * imgSc;
+                    var drawH = srcH * imgSc;
+                    var drawX = imgX - ov.imageOffsetX * imgSc;
+                    var drawY = imgY - ov.imageOffsetY * imgSc;
+                    ctx.drawImage(bmp, trim, trim, srcW, srcH, drawX, drawY, drawW, drawH);
+                    ctx.restore();
                 }
             }
 
@@ -1185,6 +1436,13 @@
             ctx.setLineDash([6, 4]);
             ctx.strokeRect(x+2, y+2, w-4, h-4);
             ctx.setLineDash([]);
+        } else if (selectedCellGroup.has(cell.id)) {
+            // Multi-select highlight (align mode)
+            ctx.strokeStyle = '#E040FB';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([6, 3]);
+            ctx.strokeRect(x+1.5, y+1.5, w-3, h-3);
+            ctx.setLineDash([]);
         } else if (isSelected) {
             var isFlash = (tabFlashCellId !== null && cell.id === tabFlashCellId);
             ctx.strokeStyle = isFlash ? '#4CAF50' : '#2196F3';
@@ -1265,7 +1523,7 @@
     var MIN_DRAG_CELL = 0.5;
     var IMAGE_DRAG_THRESHOLD = 8;
 
-    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3, ST_DRAG_OVERLAY = 4, ST_RESIZE_OVERLAY = 5, ST_RESIZE_CELL = 6, ST_DRAG_CELL = 7;
+    var ST_IDLE = 0, ST_PAN_IMAGE = 1, ST_DRAG_EDGE = 2, ST_DRAG_IMAGE = 3, ST_DRAG_OVERLAY = 4, ST_RESIZE_OVERLAY = 5, ST_RESIZE_CELL = 6, ST_DRAG_CELL = 7, ST_PAN_OVERLAY = 8;
     var LONG_PRESS_MS = 800;
 
     class InteractionManager {
@@ -1406,7 +1664,8 @@
             this.pendingImageDrag = false;
 
             // Check overlay resize handles first (highest priority)
-            if (!this.resizeMode) {
+            // Only if overlays are visible
+            if (!this.resizeMode && showOverlays) {
                 var handle = this.hitTestOverlayHandle(dx, dy);
                 if (handle) {
                     var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
@@ -1423,16 +1682,43 @@
                     }
                 }
 
-                // Check overlay body hit
-                var hitOv = this.hitTestOverlay(dx, dy);
+                // Check overlay body hit — drag to pan, hold to move
+                var hitOv = showOverlays ? this.hitTestOverlay(dx, dy) : null;
                 if (hitOv) {
                     selectedOverlayId = hitOv.id;
                     this.selectedCellId = null;
                     if (!hitOv.locked) {
-                        this.state = ST_DRAG_OVERLAY;
-                        this.dragOvId = hitOv.id;
-                        this.dragOvOffX = this.d2i(dx) - hitOv.x;
-                        this.dragOvOffY = this.d2i(dy) - hitOv.y;
+                        // Initialize overlay image scale if needed
+                        if (!hitOv.imageScale || hitOv.imageScale <= 0) {
+                            var ovImg = this.imgMgr.get(hitOv.imageId);
+                            if (ovImg) {
+                                var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
+                                var srcW = ovImg.naturalWidth - trim * 2, srcH = ovImg.naturalHeight - trim * 2;
+                                hitOv.imageScale = Math.max(hitOv.width * this.dpi / srcW, hitOv.height * this.dpi / srcH);
+                                hitOv.imageOffsetX = (srcW * hitOv.imageScale - hitOv.width * this.dpi) / 2 / hitOv.imageScale;
+                                hitOv.imageOffsetY = (srcH * hitOv.imageScale - hitOv.height * this.dpi) / 2 / hitOv.imageScale;
+                            }
+                        }
+                        // Start pan (like cells)
+                        this.state = ST_PAN_OVERLAY;
+                        this.panStartX = dx; this.panStartY = dy;
+                        this.panOrigOX = hitOv.imageOffsetX;
+                        this.panOrigOY = hitOv.imageOffsetY;
+                        // Long-press to switch to move
+                        this.clearLongPress();
+                        var self = this;
+                        this.longPressTimer = setTimeout(function() {
+                            self.longPressTimer = null;
+                            // Revert pan
+                            hitOv.imageOffsetX = self.panOrigOX;
+                            hitOv.imageOffsetY = self.panOrigOY;
+                            // Switch to overlay move
+                            self.state = ST_DRAG_OVERLAY;
+                            self.dragOvId = hitOv.id;
+                            self.dragOvOffX = self.d2i(self.mouseDownX) - hitOv.x;
+                            self.dragOvOffY = self.d2i(self.mouseDownY) - hitOv.y;
+                            self.onChange();
+                        }, LONG_PRESS_MS);
                     }
                     this.onChange();
                     return;
@@ -1459,8 +1745,8 @@
                 }
             }
 
-            // Check selected cell resize handles
-            var cellHandle = this.hitTestCellHandle(dx, dy);
+            // Check selected cell resize handles (only if cells visible)
+            var cellHandle = showCells ? this.hitTestCellHandle(dx, dy) : null;
             if (cellHandle) {
                 var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
                 if (cell) {
@@ -1472,8 +1758,8 @@
                 }
             }
 
-            // Shift+drag for image swap
-            var cell = this.hitTestCell(dx, dy);
+            // Shift+drag for image swap (only if cells visible)
+            var cell = showCells ? this.hitTestCell(dx, dy) : null;
             if (shiftKey && cell && cell.imageId && !cell.locked) {
                 this.selectedCellId = cell.id;
                 this.pendingImageDrag = true;
@@ -1526,10 +1812,11 @@
             if (this.state === ST_DRAG_CELL) {
                 var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
                 if (cell) {
-                    cell.x = Math.max(this.collage.marginLeft, this.d2i(dx) - this.dragCellOffX);
-                    cell.y = Math.max(this.collage.marginTop, this.d2i(dy) - this.dragCellOffY);
-                    cell.x = Math.min(cell.x, this.collage.paperWidth - this.collage.marginRight - cell.width);
-                    cell.y = Math.min(cell.y, this.collage.paperHeight - this.collage.marginBottom - cell.height);
+                    var lbb = getLayoutBoundingBox();
+                    cell.x = Math.max(lbb.x, this.d2i(dx) - this.dragCellOffX);
+                    cell.y = Math.max(lbb.y, this.d2i(dy) - this.dragCellOffY);
+                    cell.x = Math.min(cell.x, lbb.x + lbb.width - cell.width);
+                    cell.y = Math.min(cell.y, lbb.y + lbb.height - cell.height);
                     this.onChange();
                 }
                 return;
@@ -1563,6 +1850,23 @@
                         cell.x = newX;
                         cell.y = newY;
                     }
+                    this.onChange();
+                }
+                return;
+            }
+
+            if (this.state === ST_PAN_OVERLAY) {
+                var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+                if (ov) {
+                    var ddx = dx - this.panStartX, ddy = dy - this.panStartY;
+                    // Cancel long-press if moved
+                    if (this.longPressTimer && Math.hypot(ddx, ddy) > 5) {
+                        this.clearLongPress();
+                    }
+                    var r = 1 / (ov.imageScale * this.displayScale);
+                    ov.imageOffsetX = this.panOrigOX - ddx * r;
+                    ov.imageOffsetY = this.panOrigOY - ddy * r;
+                    this.clampOverlayOffset(ov);
                     this.onChange();
                 }
                 return;
@@ -1671,6 +1975,13 @@
 
             if (this.state === ST_DRAG_CELL) {
                 this.rebuildEdges();
+                this.state = ST_IDLE;
+                this.onChange();
+                return;
+            }
+
+            if (this.state === ST_PAN_OVERLAY) {
+                this.clearLongPress();
                 this.state = ST_IDLE;
                 this.onChange();
                 return;
@@ -1795,7 +2106,32 @@
         }
 
         onWheel(dx, dy, deltaY) {
-            if (this.selectedCellId === null) return;
+            // Zoom overlay if selected and visible
+            if (selectedOverlayId !== null && showOverlays) {
+                var ov = overlays.find(function(o) { return o.id === selectedOverlayId; });
+                if (ov && ov.imageId) {
+                    var img = this.imgMgr.get(ov.imageId);
+                    if (img) {
+                        // Initialize scale if needed
+                        if (!ov.imageScale || ov.imageScale <= 0) {
+                            var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
+                            var srcW = img.naturalWidth - trim * 2, srcH = img.naturalHeight - trim * 2;
+                            ov.imageScale = Math.max(ov.width * this.dpi / srcW, ov.height * this.dpi / srcH);
+                            ov.imageOffsetX = (srcW * ov.imageScale - ov.width * this.dpi) / 2 / ov.imageScale;
+                            ov.imageOffsetY = (srcH * ov.imageScale - ov.height * this.dpi) / 2 / ov.imageScale;
+                        }
+                        var factor = deltaY > 0 ? 0.95 : 1.05;
+                        var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
+                        var srcW = img.naturalWidth - trim * 2, srcH = img.naturalHeight - trim * 2;
+                        var minSc = Math.max(ov.width * this.dpi / srcW, ov.height * this.dpi / srcH);
+                        ov.imageScale = Math.max(ov.imageScale * factor, minSc);
+                        this.clampOverlayOffset(ov);
+                        this.onChange();
+                        return;
+                    }
+                }
+            }
+            if (this.selectedCellId === null || !showCells) return;
             var cell = this.collage.cells.find(function(c) { return c.id === this.selectedCellId; }.bind(this));
             if (!cell || !cell.imageId) return;
             var img = this.imgMgr.get(cell.imageId);
@@ -1842,7 +2178,20 @@
             cell.imageOffsetY = clamp(cell.imageOffsetY, 0, Math.max(0, img.naturalHeight - vh));
         }
 
+        clampOverlayOffset(ov) {
+            if (!ov.imageId || !ov.imageScale) return;
+            var img = this.imgMgr.get(ov.imageId);
+            if (!img) return;
+            var trim = parseInt(document.getElementById('setting-edge-trim').value) || 0;
+            var srcW = img.naturalWidth - trim * 2, srcH = img.naturalHeight - trim * 2;
+            var vw = ov.width * this.dpi / ov.imageScale;
+            var vh = ov.height * this.dpi / ov.imageScale;
+            ov.imageOffsetX = clamp(ov.imageOffsetX, 0, Math.max(0, srcW - vw));
+            ov.imageOffsetY = clamp(ov.imageOffsetY, 0, Math.max(0, srcH - vh));
+        }
+
         getCursorStyle(dx, dy) {
+            if (this.state === ST_PAN_OVERLAY) return 'grabbing';
             if (this.state === ST_DRAG_OVERLAY) return 'move';
             if (this.state === ST_RESIZE_OVERLAY) return this.resizeOvHandle === 'nw' || this.resizeOvHandle === 'se' ? 'nwse-resize' : 'nesw-resize';
             if (this.state === ST_DRAG_CELL) return 'grabbing';
@@ -1917,12 +2266,29 @@
     }
 
     function dataURLtoBlob(dataURL) {
+        if (!dataURL || typeof dataURL !== 'string') {
+            console.warn('dataURLtoBlob: invalid input', typeof dataURL);
+            return new Blob([], { type: 'image/png' });
+        }
         var parts = dataURL.split(',');
-        var mime = parts[0].match(/:(.*?);/)[1];
-        var binary = atob(parts[1]);
-        var arr = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
-        return new Blob([arr], { type: mime });
+        var mime = 'image/png';
+        var b64;
+        if (parts.length > 1 && parts[0].indexOf('base64') >= 0) {
+            var mimeMatch = parts[0].match(/:(.*?);/);
+            if (mimeMatch) mime = mimeMatch[1];
+            b64 = parts[1];
+        } else {
+            b64 = parts[parts.length - 1];
+        }
+        try {
+            var binary = atob(b64);
+            var arr = new Uint8Array(binary.length);
+            for (var i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        } catch (e) {
+            console.error('dataURLtoBlob decode error:', e.message);
+            return new Blob([], { type: mime });
+        }
     }
 
     async function saveProject(collage, imgMgr) {
@@ -1943,6 +2309,7 @@
 
         var project = {
             version: 1,
+            savedAt: new Date().toISOString(),
             collage: {
                 paperWidth: collage.paperWidth,
                 paperHeight: collage.paperHeight,
@@ -1966,7 +2333,7 @@
                     x: ov.x, y: ov.y, width: ov.width, height: ov.height,
                     mode: ov.mode, fillColor: ov.fillColor,
                     locked: ov.locked || false,
-                    padding: ov.padding || 0
+                    padding: ov.padding || 0, imageOffsetX: ov.imageOffsetX || 0, imageOffsetY: ov.imageOffsetY || 0, imageScale: ov.imageScale || 0
                 };
             }),
             borderObjs: borderObjs.map(function(bo) {
@@ -1976,13 +2343,14 @@
                     mode: bo.mode, fillColor: bo.fillColor,
                     locked: bo.locked || false,
                     padding: bo.padding || 0,
-                    label: bo.label || ''
+                    label: bo.label || '', innerMode: bo.innerMode || 'auto', innerX: bo.innerX || 0, innerY: bo.innerY || 0, innerWidth: bo.innerWidth || 0, innerHeight: bo.innerHeight || 0, fillLayout: bo.fillLayout || false
                 };
             }),
             images: imageData,
             settings: {
                 stackResize: document.getElementById('setting-stack-resize').value,
-                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0
+                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0,
+                layoutScale: parseInt(document.getElementById('layout-scale').value) || 100, layoutInset: parseInt(document.getElementById('layout-inset').value) || 0
             }
         };
 
@@ -1996,7 +2364,7 @@
         URL.revokeObjectURL(url);
 
         var sizeMB = (blob.size / 1048576).toFixed(1);
-        updateStatus('Project saved (' + sizeMB + ' MB)');
+        updateStatus('Project saved (' + sizeMB + ' MB) — ' + new Date().toLocaleString());
     }
 
     async function createShareableProject(collage, imgMgr) {
@@ -2042,6 +2410,7 @@
         var project = {
             version: 2,
             shareable: true,
+            savedAt: new Date().toISOString(),
             collage: {
                 paperWidth: collage.paperWidth,
                 paperHeight: collage.paperHeight,
@@ -2065,7 +2434,7 @@
                     x: ov.x, y: ov.y, width: ov.width, height: ov.height,
                     mode: ov.mode, fillColor: ov.fillColor,
                     locked: ov.locked || false,
-                    padding: ov.padding || 0
+                    padding: ov.padding || 0, imageOffsetX: ov.imageOffsetX || 0, imageOffsetY: ov.imageOffsetY || 0, imageScale: ov.imageScale || 0
                 };
             }),
             borderObjs: borderObjs.map(function(bo) {
@@ -2075,7 +2444,7 @@
                     mode: bo.mode, fillColor: bo.fillColor,
                     locked: bo.locked || false,
                     padding: bo.padding || 0,
-                    label: bo.label || ''
+                    label: bo.label || '', innerMode: bo.innerMode || 'auto', innerX: bo.innerX || 0, innerY: bo.innerY || 0, innerWidth: bo.innerWidth || 0, innerHeight: bo.innerHeight || 0, fillLayout: bo.fillLayout || false
                 };
             }),
             images: Object.keys(fileNameMap).map(function(id) {
@@ -2087,10 +2456,8 @@
             }),
             settings: {
                 stackResize: document.getElementById('setting-stack-resize').value,
-                frameWidth: parseFloat(document.getElementById('setting-frame-width').value) || 0,
-                frameColor: document.getElementById('setting-frame-color').value,
-                frameImageFile: fileNameMap[document.getElementById('setting-frame-image').value] || null,
-                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0
+                edgeTrim: parseInt(document.getElementById('setting-edge-trim').value) || 0,
+                layoutScale: parseInt(document.getElementById('layout-scale').value) || 100, layoutInset: parseInt(document.getElementById('layout-inset').value) || 0
             }
         };
 
@@ -2144,8 +2511,8 @@
             var fileToIdMap = {}; // filename → new id (for shareable format)
 
             if (project.shareable && zipImages) {
-                // Shareable format: load from ZIP files
-                var imgList = project.images; // array of { file, enabled }
+                // Shareable format from ZIP: load from ZIP files
+                var imgList = project.images;
                 for (var i = 0; i < imgList.length; i++) {
                     var entry = imgList[i];
                     var zipFile = zipImages.file(entry.file);
@@ -2157,18 +2524,65 @@
                     fileToIdMap[entry.file] = newId;
                     imageManager.setEnabled(newId, entry.enabled);
                 }
+            } else if (project.shareable && !zipImages) {
+                // Shareable format loaded as standalone .collage — need image files
+                var imgList = project.images;
+                var fileNames = imgList.map(function(e) { return e.file; }).join(', ');
+                updateStatus('Project needs image files. Select the images folder...');
+                // Prompt user to select image files
+                var imgInput = document.createElement('input');
+                imgInput.type = 'file';
+                imgInput.multiple = true;
+                imgInput.accept = 'image/*';
+                var selectedFiles = await new Promise(function(resolve) {
+                    imgInput.addEventListener('change', function() { resolve(imgInput.files); });
+                    // Show dialog with instructions
+                    alert('This project references external image files:\n\n' + fileNames +
+                          '\n\nPlease select these files from the images folder.');
+                    imgInput.click();
+                });
+                // Match selected files to project references
+                for (var i = 0; i < imgList.length; i++) {
+                    var entry = imgList[i];
+                    var matchFile = null;
+                    for (var j = 0; j < selectedFiles.length; j++) {
+                        if (selectedFiles[j].name === entry.file) {
+                            matchFile = selectedFiles[j]; break;
+                        }
+                    }
+                    if (!matchFile) {
+                        console.warn('Image not found in selection:', entry.file);
+                        continue;
+                    }
+                    var newIds = await imageManager.loadFiles([matchFile]);
+                    var newId = newIds[0];
+                    fileToIdMap[entry.file] = newId;
+                    imageManager.setEnabled(newId, entry.enabled);
+                }
             } else {
                 // Embedded format: load from base64 data URLs
                 var imageEntries = Object.entries(project.images);
                 for (var i = 0; i < imageEntries.length; i++) {
                     var oldId = imageEntries[i][0];
                     var imgData = imageEntries[i][1];
-                    var blob = dataURLtoBlob(imgData.dataURL);
-                    var imgFile = new File([blob], imgData.fileName, { type: blob.type });
-                    var newIds = await imageManager.loadFiles([imgFile]);
-                    var newId = newIds[0];
-                    idMap[oldId] = newId;
-                    imageManager.setEnabled(newId, imgData.enabled);
+                    try {
+                        if (!imgData || !imgData.dataURL) {
+                            console.warn('Skipping image with no data:', oldId, imgData);
+                            continue;
+                        }
+                        var blob = dataURLtoBlob(imgData.dataURL);
+                        if (blob.size === 0) {
+                            console.warn('Empty blob for image:', oldId, imgData.fileName);
+                            continue;
+                        }
+                        var imgFile = new File([blob], imgData.fileName || 'image.png', { type: blob.type || 'image/png' });
+                        var newIds = await imageManager.loadFiles([imgFile]);
+                        var newId = newIds[0];
+                        idMap[oldId] = newId;
+                        imageManager.setEnabled(newId, imgData.enabled !== false);
+                    } catch (imgErr) {
+                        console.error('Failed to load image:', oldId, imgData.fileName, imgErr.message);
+                    }
                 }
             }
 
@@ -2176,7 +2590,15 @@
             function resolveImageId(oldId, fileName) {
                 if (fileName && fileToIdMap[fileName]) return fileToIdMap[fileName];
                 if (oldId && idMap[oldId]) return idMap[oldId];
-                return oldId;
+                // Fallback: search by filename in loaded images
+                if (fileName) {
+                    var allImgs = imageManager.getAll();
+                    for (var j = 0; j < allImgs.length; j++) {
+                        if (allImgs[j].fileName === fileName) return allImgs[j].id;
+                    }
+                }
+                console.warn('Could not resolve image:', oldId, fileName);
+                return null;
             }
 
             // Rebuild collage
@@ -2200,13 +2622,19 @@
 
             // Rebuild overlays
             nextOverlayId = 0;
+            console.log('Rebuilding overlays:', (project.overlays || []).length, 'from project');
             overlays = (project.overlays || []).map(function(ov) {
                 var resolvedId = resolveImageId(ov.imageId, ov.imageFile);
+                console.log('Overlay:', ov.imageId, ov.imageFile, '→', resolvedId);
                 var newOv = createOverlay(resolvedId, ov.x, ov.y, ov.width, ov.height);
+                // (overlay images render regardless of enabled flag)
                 newOv.mode = ov.mode;
                 newOv.fillColor = ov.fillColor;
                 newOv.locked = ov.locked || false;
                 newOv.padding = ov.padding || 0;
+                newOv.imageOffsetX = ov.imageOffsetX || 0;
+                newOv.imageOffsetY = ov.imageOffsetY || 0;
+                newOv.imageScale = ov.imageScale || 0;
                 return newOv;
             });
 
@@ -2214,12 +2642,19 @@
             nextBorderObjId = 0;
             borderObjs = (project.borderObjs || []).map(function(bo) {
                 var resolvedId = resolveImageId(bo.imageId, bo.imageFile);
+                // (border images render regardless of enabled flag)
                 var newBo = createBorderObj(resolvedId, bo.x, bo.y, bo.width, bo.height);
                 newBo.mode = bo.mode || 'filled';
                 newBo.fillColor = bo.fillColor || '#ffffff';
                 newBo.locked = bo.locked || false;
                 newBo.padding = bo.padding || 0;
                 newBo.label = bo.label || '';
+                newBo.innerMode = bo.innerMode || 'auto';
+                newBo.innerX = bo.innerX || 0;
+                newBo.innerY = bo.innerY || 0;
+                newBo.innerWidth = bo.innerWidth || 0;
+                newBo.innerHeight = bo.innerHeight || 0;
+                newBo.fillLayout = bo.fillLayout || false;
                 return newBo;
             });
             selectedBorderObjId = null;
@@ -2227,22 +2662,37 @@
             // Restore settings
             if (project.settings) {
                 document.getElementById('setting-stack-resize').value = project.settings.stackResize || 'row-col';
-                if (project.settings.frameWidth !== undefined) {
-                    document.getElementById('setting-frame-width').value = project.settings.frameWidth;
-                }
-                if (project.settings.frameColor) {
-                    document.getElementById('setting-frame-color').value = project.settings.frameColor;
-                }
-                if (project.settings.frameImageId) {
-                    // Map old image ID to new one
-                    var mappedId = resolveImageId(project.settings.frameImageId, project.settings.frameImageFile);
-                    setTimeout(function() {
-                        document.getElementById('setting-frame-image').value = mappedId;
-                    }, 0);
-                }
                 if (project.settings.edgeTrim !== undefined) {
                     document.getElementById('setting-edge-trim').value = project.settings.edgeTrim;
                 }
+                if (project.settings.layoutScale !== undefined) {
+                    document.getElementById('layout-scale').value = project.settings.layoutScale;
+                    updateLayoutScaleLabel();
+                }
+                if (project.settings.layoutInset !== undefined) {
+                    document.getElementById('layout-inset').value = project.settings.layoutInset;
+                    document.getElementById('layout-inset-val').textContent = project.settings.layoutInset + '%';
+                }
+
+                // LEGACY (pre-2026-03-23): migrate old frame/matte settings to borderObj
+                var legacyFrameWidth = project.settings.frameWidth || 0;
+                if (legacyFrameWidth > 0) {
+                    console.log('Legacy migration: converting frame settings to borderObj');
+                    var frameColor = project.settings.frameColor || '#ffffff';
+                    var frameImgId = resolveImageId(project.settings.frameImageId, project.settings.frameImageFile);
+                    // Create a full-paper border with the frame color
+                    var frameBo = createBorderObj(frameImgId, 0, 0, pc.paperWidth, pc.paperHeight);
+                    frameBo.fillColor = frameColor;
+                    frameBo.mode = 'filled';
+                    frameBo.fillLayout = true; // background fills entire page
+                    frameBo.label = 'Migrated frame';
+                    // (border images render regardless of enabled flag)
+                    borderObjs.push(frameBo);
+                    updateStatus('Legacy frame settings migrated to border object.');
+                }
+                // Clear old frame hidden inputs so they don't interfere
+                document.getElementById('setting-frame-width').value = 0;
+                document.getElementById('setting-frame-image').value = '';
             }
 
             // Update paper size selector
@@ -2290,7 +2740,18 @@
             document.getElementById('identify-btn').disabled = false;
             document.getElementById('share-btn').disabled = false;
 
-            updateStatus('Project loaded — ' + collage.cells.length + ' cells, ' +
+            // Log mapping results for debugging
+            console.log('Load complete. idMap:', idMap, 'fileToIdMap:', fileToIdMap);
+            console.log('Cells:', collage.cells.length, 'Overlays:', overlays.length, 'Borders:', borderObjs.length);
+            var unmapped = collage.cells.filter(function(c) { return c.imageId && !imageManager.get(c.imageId); });
+            if (unmapped.length) console.warn('Cells with unmapped images:', unmapped);
+
+            var savedStr = '';
+            if (project.savedAt) {
+                var d = new Date(project.savedAt);
+                savedStr = ' — saved ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+            }
+            updateStatus('Project loaded' + savedStr + ' — ' + collage.cells.length + ' cells, ' +
                           overlays.length + ' overlays, ' + borderObjs.length + ' borders, ' + imageManager.count() + ' images');
         } catch (err) {
             updateStatus('Load error: ' + err.message);
@@ -2329,7 +2790,7 @@
         generateBtn = document.getElementById('generate-btn');
         randomizeBtn = document.getElementById('randomize-btn');
         refreshBtn = document.getElementById('refresh-btn');
-        resizeModeBtn = document.getElementById('resize-mode-btn');
+        resizeModeBtn = document.getElementById('resize-mode-btn') || document.createElement('button');
         exportBtn = document.getElementById('export-btn');
         statusBar = document.getElementById('status-bar');
         cellInfo = document.getElementById('cell-info');
@@ -2344,14 +2805,32 @@
         propResolution = document.getElementById('prop-resolution');
         propCellsize = document.getElementById('prop-cellsize');
         modeBadge = document.getElementById('mode-badge');
-        modeHint = document.getElementById('mode-hint');
+        modeHint = document.getElementById('mode-hint') || document.createElement('p');
 
         fileInput.addEventListener('change', onFilesSelected);
-        paperSelect.addEventListener('change', onPaperChange);
+        paperSelect.addEventListener('change', function() {
+            onPaperChange();
+            // Sync to Scale mode quick selector
+            var quickSel = document.getElementById('page-size-quick');
+            var val = paperSelect.value;
+            var matched = false;
+            for (var i = 0; i < quickSel.options.length; i++) {
+                if (quickSel.options[i].value === val) { quickSel.value = val; matched = true; break; }
+            }
+            if (!matched) quickSel.value = 'custom';
+            updateLayoutScaleLabel();
+        });
         generateBtn.addEventListener('click', onGenerate);
-        randomizeBtn.addEventListener('click', onRandomize);
+        document.getElementById('generate-fixed-btn').addEventListener('click', function() {
+            document.getElementById('setting-equal-sizes').checked = true;
+            onGenerate();
+        });
+        randomizeBtn.addEventListener('click', function() {
+            document.getElementById('setting-equal-sizes').checked = false;
+            onRandomize();
+        });
         refreshBtn.addEventListener('click', onRefresh);
-        resizeModeBtn.addEventListener('click', onResizeModeToggle);
+        // resize-mode-btn removed — edge resize is now via Content > Edge Resize
         exportBtn.addEventListener('click', onExport);
 
         // Menu bar: click to open/close, click outside to close
@@ -2462,6 +2941,237 @@
             dirty = true;
         });
 
+        // ============ Canvas Mode System ============
+        function setCanvasMode(mode) {
+            canvasMode = mode;
+            document.getElementById('content-mode-btn').classList.toggle('active-toggle', mode === 'content');
+            document.getElementById('align-mode-btn').classList.toggle('active-toggle', mode === 'align');
+            document.getElementById('size-mode-btn').classList.toggle('active-toggle', mode === 'size');
+            document.getElementById('scale-mode-btn').classList.toggle('active-toggle', mode === 'scale');
+            document.getElementById('align-tools').style.display = mode === 'align' ? 'flex' : 'none';
+            document.getElementById('size-tools').style.display = mode === 'size' ? 'flex' : 'none';
+            document.getElementById('scale-tools').style.display = mode === 'scale' ? 'flex' : 'none';
+            if (mode === 'scale') {
+                var hint = document.getElementById('scale-hint');
+                hint.textContent = collage ? 'Drag edges or move the blue layout box' : 'Load photos or a project first';
+            }
+            if (mode !== 'content' && interaction && interaction.resizeMode) {
+                interaction.toggleResizeMode();
+                updateResizeModeBtn();
+            }
+            // Clear multi-select when leaving align or size
+            if (mode !== 'align' && mode !== 'size') {
+                selectedCellGroup.clear();
+                document.getElementById('align-count').textContent = '';
+                document.getElementById('size-count').textContent = '';
+            }
+            updateModeBadge();
+            dirty = true;
+        }
+
+        function setContentSubMode(submode) {
+            contentSubMode = submode;
+            // Update checkmarks in dropdown
+            document.querySelectorAll('.canvas-mode-item').forEach(function(item) {
+                var sm = item.getAttribute('data-submode');
+                item.textContent = (sm === submode ? '✓ ' : '   ') + item.textContent.replace(/^[✓\s]+/, '');
+            });
+            // Handle edge resize toggle
+            if (interaction) {
+                if (submode === 'edge-resize' && !interaction.resizeMode) {
+                    interaction.toggleResizeMode();
+                } else if (submode !== 'edge-resize' && interaction.resizeMode) {
+                    interaction.toggleResizeMode();
+                }
+                updateResizeModeBtn();
+            }
+            updateModeBadge();
+            dirty = true;
+        }
+
+        // updateModeBadge is module-level (see below)
+
+        // Mode button clicks
+        document.getElementById('content-mode-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (canvasMode !== 'content') { setCanvasMode('content'); return; }
+            // Toggle dropdown
+            this.parentElement.classList.toggle('open');
+        });
+        document.getElementById('align-mode-btn').addEventListener('click', function() {
+            setCanvasMode(canvasMode === 'align' ? 'content' : 'align');
+        });
+        document.getElementById('size-mode-btn').addEventListener('click', function() {
+            setCanvasMode(canvasMode === 'size' ? 'content' : 'size');
+        });
+        document.getElementById('scale-mode-btn').addEventListener('click', function() {
+            setCanvasMode(canvasMode === 'scale' ? 'content' : 'scale');
+        });
+
+        // Content sub-mode items
+        document.querySelectorAll('.canvas-mode-item').forEach(function(item) {
+            item.addEventListener('click', function() {
+                setContentSubMode(this.getAttribute('data-submode'));
+                document.querySelectorAll('.menu-dropdown').forEach(function(d) { d.classList.remove('open'); });
+            });
+        });
+
+        // ============ Align Mode Tools ============
+        function updateAlignCount() {
+            var count = selectedCellGroup.size;
+            var label = count > 0 ? count + ' selected' : '';
+            document.getElementById('align-count').textContent = label;
+            document.getElementById('size-count').textContent = label;
+        }
+
+        document.getElementById('snap-top').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            var minY = Infinity;
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) minY = Math.min(minY, c.y); });
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.y = minY; });
+            dirty = true;
+        });
+        document.getElementById('snap-bottom').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            var maxB = -Infinity;
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) maxB = Math.max(maxB, c.y + c.height); });
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.y = maxB - c.height; });
+            dirty = true;
+        });
+        document.getElementById('snap-left').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            var minX = Infinity;
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) minX = Math.min(minX, c.x); });
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.x = minX; });
+            dirty = true;
+        });
+        document.getElementById('snap-right').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            var maxR = -Infinity;
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) maxR = Math.max(maxR, c.x + c.width); });
+            collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.x = maxR - c.width; });
+            dirty = true;
+        });
+        document.getElementById('clear-selection-btn').addEventListener('click', function() {
+            selectedCellGroup.clear();
+            updateAlignCount();
+            dirty = true;
+        });
+
+        // ============ Size Mode Tools ============
+        document.getElementById('equal-heights-btn').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            // Average height across selected cells
+            var total = 0, count = 0;
+            collage.cells.forEach(function(c) {
+                if (selectedCellGroup.has(c.id)) { total += c.height; count++; }
+            });
+            var avgH = total / count;
+            collage.cells.forEach(function(c) {
+                if (selectedCellGroup.has(c.id)) {
+                    // Center vertically at same midpoint
+                    var midY = c.y + c.height / 2;
+                    c.height = avgH;
+                    c.y = midY - avgH / 2;
+                }
+            });
+            if (interaction) {
+                collage.cells.forEach(function(c) {
+                    if (selectedCellGroup.has(c.id)) interaction.refitCell(c);
+                });
+                interaction.rebuildEdges();
+            }
+            dirty = true;
+        });
+
+        document.getElementById('equal-widths-btn').addEventListener('click', function() {
+            if (selectedCellGroup.size < 2 || !collage) return;
+            var total = 0, count = 0;
+            collage.cells.forEach(function(c) {
+                if (selectedCellGroup.has(c.id)) { total += c.width; count++; }
+            });
+            var avgW = total / count;
+            collage.cells.forEach(function(c) {
+                if (selectedCellGroup.has(c.id)) {
+                    var midX = c.x + c.width / 2;
+                    c.width = avgW;
+                    c.x = midX - avgW / 2;
+                }
+            });
+            if (interaction) {
+                collage.cells.forEach(function(c) {
+                    if (selectedCellGroup.has(c.id)) interaction.refitCell(c);
+                });
+                interaction.rebuildEdges();
+            }
+            dirty = true;
+        });
+
+        document.getElementById('clear-size-sel-btn').addEventListener('click', function() {
+            selectedCellGroup.clear();
+            document.getElementById('size-count').textContent = '';
+            dirty = true;
+        });
+
+        // ============ Context Help ============
+        var helpPanel = document.getElementById('help-panel');
+        document.getElementById('help-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            var visible = helpPanel.style.display !== 'none';
+            helpPanel.style.display = visible ? 'none' : 'block';
+            if (!visible) updateHelpContent();
+        });
+        document.addEventListener('click', function() { helpPanel.style.display = 'none'; });
+        helpPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        function updateHelpContent() {
+            var lines = [];
+            if (!collage) {
+                lines.push('<b>Getting Started</b>');
+                lines.push('• Drop photos onto the canvas');
+                lines.push('• Click <b>+ Photo</b>, <b>+ Text</b>, or <b>+ Border</b>');
+                lines.push('• Use <b>File > Load Photos</b> or <b>Load Project</b>');
+                lines.push('• Press <b>Ctrl+V</b> to paste overlay');
+            } else if (canvasMode === 'align') {
+                lines.push('<b>Align Mode</b>');
+                lines.push('• <b>Shift+Click</b> cells to add to selection');
+                lines.push('• Use <b>⬆T ⬇B ⬅L ➡R</b> to snap edges');
+                lines.push('• <b>Arrow keys</b> move all selected');
+                lines.push('• Click <b>Clear</b> to deselect all');
+            } else if (canvasMode === 'size') {
+                lines.push('<b>Size Mode</b>');
+                lines.push('• Click cells to select (Shift to toggle)');
+                lines.push('• <b>↕H</b> make heights equal');
+                lines.push('• <b>↔W</b> make widths equal');
+                lines.push('• <b>Arrow keys</b> move all selected');
+            } else if (canvasMode === 'scale') {
+                lines.push('<b>Scale Mode</b>');
+                lines.push('• Drag slider to adjust export scale');
+                lines.push('• Shows resulting paper dimensions');
+            } else if (contentSubMode === 'edge-resize') {
+                lines.push('<b>Edge Resize Mode</b>');
+                lines.push('• Drag shared edges between cells');
+                lines.push('• Click <b>Content > Select/Edit</b> to exit');
+            } else if (contentSubMode === 'insert') {
+                lines.push('<b>Insert Mode</b>');
+                lines.push('• Drop image on cell: replace/insert zones');
+                lines.push('• Drop in whitespace: new cell at 80%');
+            } else {
+                lines.push('<b>Select / Edit Mode</b>');
+                lines.push('• <b>Click</b> cell/overlay to select');
+                lines.push('• <b>Drag</b> to pan image in cell');
+                lines.push('• <b>Scroll</b> wheel to zoom');
+                lines.push('• <b>Corner handles</b> resize element');
+                lines.push('• <b>Hold 1s + drag</b> to move cell');
+                lines.push('• <b>Shift+drag</b> to swap images');
+                lines.push('• <b>Arrow keys</b> nudge position');
+                lines.push('• <b>+/-</b> grow/shrink 10%');
+                lines.push('• <b>Tab</b> cycle cells');
+                lines.push('• <b>Delete</b> remove overlay');
+            }
+            helpPanel.innerHTML = lines.join('<br>');
+        }
+
         // Border obj management
         document.getElementById('add-border-btn').addEventListener('click', function() {
             if (!collage) return;
@@ -2483,6 +3193,11 @@
         document.getElementById('border-mode').addEventListener('change', onBorderPropChange);
         document.getElementById('border-fill').addEventListener('input', onBorderPropChange);
         document.getElementById('border-opacity').addEventListener('input', onBorderPropChange);
+        document.getElementById('border-fill-layout').addEventListener('change', onBorderPropChange);
+        document.getElementById('border-inner-mode').addEventListener('change', onBorderPropChange);
+        ['border-ix','border-iy','border-iw','border-ih'].forEach(function(id) {
+            document.getElementById(id).addEventListener('change', onBorderPropChange);
+        });
         // Border image file picker
         document.getElementById('border-image-input').addEventListener('change', async function(e) {
             if (!e.target.files.length || selectedBorderObjId === null) return;
@@ -2498,6 +3213,46 @@
             updateBorderProps();
             updateStatus('Border image loaded.');
         });
+        // Border drop zone for background image
+        var borderDropZone = document.getElementById('border-drop-zone');
+        borderDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('active');
+        });
+        borderDropZone.addEventListener('dragleave', function(e) {
+            e.stopPropagation();
+            this.classList.remove('active');
+        });
+        borderDropZone.addEventListener('drop', async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+            var files = filterImageFiles(e.dataTransfer.files);
+            if (files.length === 0) return;
+
+            // If no border selected, create one
+            if (selectedBorderObjId === null) {
+                if (!collage) return;
+                var bo = createBorderObj(null, 0, 0, collage.paperWidth, collage.paperHeight);
+                bo.fillLayout = true;
+                borderObjs.push(bo);
+                selectedBorderObjId = bo.id;
+            }
+
+            var bo = borderObjs.find(function(b) { return b.id === selectedBorderObjId; });
+            if (!bo) return;
+            var ids = await imageManager.loadFiles(files);
+            bo.imageId = ids[0];
+            var img = imageManager.get(ids[0]);
+            if (img) img.sourceType = 'border';
+            dirty = true;
+            renderFileList();
+            updateBorderProps();
+            updateCellInfo();
+            updateStatus('Background image set.');
+        });
+
         document.getElementById('delete-border-btn').addEventListener('click', function() {
             if (selectedBorderObjId === null) return;
             borderObjs = borderObjs.filter(function(b) { return b.id !== selectedBorderObjId; });
@@ -2524,6 +3279,79 @@
         });
 
         // (tools menu moved to Layout dropdown)
+
+        // Layout inset slider — adjusts margins proportionally to create frame space
+        document.getElementById('layout-inset').addEventListener('input', function() {
+            var pct = parseInt(this.value);
+            document.getElementById('layout-inset-val').textContent = pct + '%';
+            if (collage && collage.cells.length > 0) {
+                // Get old layout bounds before changing margins
+                var oldLbb = getLayoutBoundingBox();
+
+                var insetX = collage.paperWidth * pct / 200;
+                var insetY = collage.paperHeight * pct / 200;
+                collage.marginTop = insetY; collage.marginBottom = insetY;
+                collage.marginLeft = insetX; collage.marginRight = insetX;
+                document.getElementById('margin-top').value = insetY.toFixed(3);
+                document.getElementById('margin-bottom').value = insetY.toFixed(3);
+                document.getElementById('margin-left').value = insetX.toFixed(3);
+                document.getElementById('margin-right').value = insetX.toFixed(3);
+
+                // Get new layout bounds
+                var newLbb = getLayoutBoundingBox();
+
+                // Scale and reposition all cells proportionally to fit new bounds
+                if (oldLbb && newLbb && oldLbb.width > 0 && oldLbb.height > 0) {
+                    var sx = newLbb.width / oldLbb.width;
+                    var sy = newLbb.height / oldLbb.height;
+                    for (var i = 0; i < collage.cells.length; i++) {
+                        var c = collage.cells[i];
+                        c.x = newLbb.x + (c.x - oldLbb.x) * sx;
+                        c.y = newLbb.y + (c.y - oldLbb.y) * sy;
+                        c.width = c.width * sx;
+                        c.height = c.height * sy;
+                    }
+                    // Refit images to new cell sizes
+                    if (interaction) {
+                        for (var i = 0; i < collage.cells.length; i++) {
+                            interaction.refitCell(collage.cells[i]);
+                        }
+                        interaction.rebuildEdges();
+                    }
+                }
+                dirty = true;
+                updateCellInfo();
+            } else if (collage) {
+                var insetX = collage.paperWidth * pct / 200;
+                var insetY = collage.paperHeight * pct / 200;
+                collage.marginTop = insetY; collage.marginBottom = insetY;
+                collage.marginLeft = insetX; collage.marginRight = insetX;
+                dirty = true;
+            }
+        });
+
+        // Page size quick selector in Scale mode
+        document.getElementById('page-size-quick').addEventListener('change', function() {
+            if (this.value === 'custom') {
+                // Open settings for custom dimensions
+                document.getElementById('settings-modal').classList.add('visible');
+                return;
+            }
+            var parts = this.value.split('x');
+            var pw = parseFloat(parts[0]), ph = parseFloat(parts[1]);
+            // Sync to Settings dialog
+            document.getElementById('paper-size').value = this.value;
+            document.getElementById('paper-width').value = pw;
+            document.getElementById('paper-height').value = ph;
+            document.getElementById('layout-scale').value = 100;
+            onPaperChange();
+            if (collage) {
+                collage.paperWidth = pw;
+                collage.paperHeight = ph;
+                dirty = true;
+            }
+            updateLayoutScaleLabel();
+        });
 
         document.getElementById('layout-scale').addEventListener('input', function() {
             updateLayoutScaleLabel();
@@ -2639,6 +3467,86 @@
                 URL.revokeObjectURL(url);
                 updateStatus('Exported raw overlay source (' + bmp.width + 'x' + bmp.height + 'px) as PNG');
             }, 'image/png');
+        });
+
+        // Convert cell → overlay
+        document.getElementById('convert-to-overlay-btn').addEventListener('click', function() {
+            var imgId = null;
+
+            // From selected cell
+            if (interaction && interaction.selectedCellId !== null && collage) {
+                var cellIdx = collage.cells.findIndex(function(c) { return c.id === interaction.selectedCellId; });
+                if (cellIdx >= 0) {
+                    var cell = collage.cells[cellIdx];
+                    if (!cell.imageId) return;
+                    var ov = createOverlay(cell.imageId, cell.x, cell.y, cell.width, cell.height);
+                    overlays.push(ov);
+                    collage.cells.splice(cellIdx, 1);
+                    interaction.selectedCellId = null;
+                    selectedOverlayId = ov.id;
+                    interaction.rebuildEdges();
+                    dirty = true;
+                    renderFileList();
+                    updateCellInfo();
+                    updateOverlayProps();
+                    updateStatus('Converted cell to overlay.');
+                    return;
+                }
+            }
+
+            // From unassigned image
+            if (selectedUnassignedImgId) {
+                imgId = selectedUnassignedImgId;
+                var img = imageManager.get(imgId);
+                if (!img) return;
+                if (!collage) {
+                    // Auto-create collage
+                    var d = getPaperDimensions(), pw = d[0], ph = d[1];
+                    var dpi = parseInt(dpiInput.value) || 300;
+                    var margins = getMargins();
+                    var gm = parseFloat(gutterInput.value) || 0.125;
+                    collage = createCollage(pw, ph, dpi, margins, gm);
+                    collage.cells = [];
+                    interaction = new InteractionManager(collage, imageManager, function() { dirty = true; updateCellInfo(); });
+                    interaction.setDisplayInfo(displayScale, collage.dpi);
+                }
+                var defW = 2.0;
+                var defH = defW * (img.naturalHeight / img.naturalWidth);
+                var ox = (collage.paperWidth - defW) / 2;
+                var oy = (collage.paperHeight - defH) / 2;
+                var ov = createOverlay(imgId, ox, oy, defW, defH);
+                overlays.push(ov);
+                selectedUnassignedImgId = null;
+                selectedOverlayId = ov.id;
+                if (interaction) interaction.selectedCellId = null;
+                img.sourceType = 'overlay';
+                dirty = true;
+                renderFileList();
+                updateCellInfo();
+                updateOverlayProps();
+                updateStatus('Added as overlay.');
+            }
+        });
+
+        // Convert overlay → cell
+        document.getElementById('convert-to-cell-btn').addEventListener('click', function() {
+            if (selectedOverlayId === null || !collage) return;
+            var ovIdx = overlays.findIndex(function(o) { return o.id === selectedOverlayId; });
+            if (ovIdx < 0) return;
+            var ov = overlays[ovIdx];
+            if (!ov.imageId) return;
+            var cell = createCell(ov.x, ov.y, ov.width, ov.height);
+            cell.imageId = ov.imageId;
+            collage.cells.unshift(cell);
+            interaction.refitCell(cell);
+            overlays.splice(ovIdx, 1);
+            selectedOverlayId = null;
+            interaction.selectedCellId = cell.id;
+            interaction.rebuildEdges();
+            dirty = true;
+            renderFileList();
+            updateCellInfo();
+            updateStatus('Converted to cell.');
         });
 
         // Text overlay mode: enter
@@ -2775,6 +3683,15 @@
             if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
 
             var key = e.key;
+
+            // Align mode: arrow keys move group
+            if ((canvasMode === 'align' || canvasMode === 'size') && selectedCellGroup.size > 0 && collage) {
+                var step = MOVE_STEP;
+                if (key === 'ArrowLeft') { e.preventDefault(); collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.x -= step; }); dirty = true; return; }
+                if (key === 'ArrowRight') { e.preventDefault(); collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.x += step; }); dirty = true; return; }
+                if (key === 'ArrowUp') { e.preventDefault(); collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.y -= step; }); dirty = true; return; }
+                if (key === 'ArrowDown') { e.preventDefault(); collage.cells.forEach(function(c) { if (selectedCellGroup.has(c.id)) c.y += step; }); dirty = true; return; }
+            }
 
             // During drag-over: arrow keys and space override drop zone
             if (isDraggingOver && dropTargetCellId !== null) {
@@ -3108,6 +4025,43 @@
         updateStatus('Layout: ' + n + ' photos on ' + pw + '"x' + ph + '" at ' + dpi + ' DPI');
     }
 
+    // Proportionally scale all cells to fit within the current layout bounding box
+    var lastRelayoutLbb = null; // track the bounds cells were last fitted to
+    function relayoutCellsToFit() {
+        if (!collage || collage.cells.length === 0) return;
+        var newLbb = getLayoutBoundingBox();
+        if (!newLbb || newLbb.width <= 0 || newLbb.height <= 0) return;
+
+        // Find current cell extent (bounding box of all cells)
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var i = 0; i < collage.cells.length; i++) {
+            var c = collage.cells[i];
+            minX = Math.min(minX, c.x); minY = Math.min(minY, c.y);
+            maxX = Math.max(maxX, c.x + c.width); maxY = Math.max(maxY, c.y + c.height);
+        }
+        var oldW = maxX - minX, oldH = maxY - minY;
+        if (oldW <= 0 || oldH <= 0) return;
+
+        // Scale and reposition
+        var sx = newLbb.width / oldW;
+        var sy = newLbb.height / oldH;
+        for (var i = 0; i < collage.cells.length; i++) {
+            var c = collage.cells[i];
+            c.x = newLbb.x + (c.x - minX) * sx;
+            c.y = newLbb.y + (c.y - minY) * sy;
+            c.width = c.width * sx;
+            c.height = c.height * sy;
+        }
+        if (interaction) {
+            for (var i = 0; i < collage.cells.length; i++) {
+                interaction.refitCell(collage.cells[i]);
+            }
+            interaction.rebuildEdges();
+        }
+        lastRelayoutLbb = newLbb;
+        updateCellInfo();
+    }
+
     function onRefresh() {
         if (!collage) return;
         var enabledIds = imageManager.getEnabledIds();
@@ -3235,17 +4189,26 @@
 
         for (var i = 0; i < filtered.length; i++) {
             var it = filtered[i];
-            var isSel = (it.imgId && it.imgId === selectedImgId) || (it.imgId && it.imgId === selectedUnassignedImgId);
-            var dimClass = (it.img && !it.img.enabled) ? ' file-item-disabled' : '';
+            // Selection: match by object id for typed objects, by image id for unassigned
+            var isSel = false;
+            if (it.type === 'border') isSel = (it.id === selectedBorderObjId);
+            else if (it.type === 'overlay') isSel = (it.id === selectedOverlayId);
+            else if (it.type === 'cell' && interaction) isSel = (it.objRef && it.objRef.id === interaction.selectedCellId);
+            else if (it.type === 'unassigned') isSel = (it.imgId === selectedUnassignedImgId);
+            if (!isSel && it.imgId && it.imgId === selectedImgId) isSel = true;
+            var dimClass = (it.type === 'unassigned' && it.img && !it.img.enabled) ? ' file-item-disabled' : '';
             var selClass = isSel ? ' file-item-selected' : '';
             var badge = '<span class="obj-type-badge obj-type-' + it.type + '">' + typeLabels[it.type] + '</span>';
             var reorderBtns = '<button class="ov-reorder-btn obj-reorder" data-obj-type="' + it.type + '" data-obj-idx="' + it.arrIdx + '" data-dir="up" title="Move up">▲</button>' +
                 '<button class="ov-reorder-btn obj-reorder" data-obj-type="' + it.type + '" data-obj-idx="' + it.arrIdx + '" data-dir="down" title="Move down">▼</button>';
             if (it.type === 'unassigned') reorderBtns = '<span style="min-width:24px;"></span>';
-            var checkbox = it.img ? '<input type="checkbox" class="file-checkbox" data-img-id="' + it.imgId + '"' + (it.img.enabled ? ' checked' : '') + '>' : '';
+            // Checkbox: assigned objects (cell/overlay/border) are always checked if they exist in the layout
+            // Only unassigned images use the enabled flag
+            var isChecked = it.type === 'unassigned' ? (it.img && it.img.enabled) : true;
+            var checkbox = it.img ? '<input type="checkbox" class="file-checkbox" data-img-id="' + it.imgId + '" data-obj-type="' + it.type + '"' + (isChecked ? ' checked' : '') + '>' : '';
             var thumb = it.img ? '<canvas class="file-thumb" width="36" height="36" data-thumb-id="' + it.imgId + '"></canvas>' : '<span class="file-thumb" style="display:inline-block;width:36px;height:36px;background:' + (it.objRef && it.objRef.fillColor || '#333') + ';border-radius:3px;"></span>';
 
-            html += '<div class="file-item' + dimClass + selClass + '" data-id="' + (it.imgId || '') + '" data-obj-type="' + it.type + '" data-obj-id="' + (it.id || '') + '" data-obj-idx="' + it.arrIdx + '">' +
+            html += '<div class="file-item' + dimClass + selClass + '" data-id="' + (it.imgId || '') + '" data-obj-type="' + it.type + '" data-obj-id="' + (it.id !== null && it.id !== undefined ? it.id : '') + '" data-obj-idx="' + it.arrIdx + '">' +
                 reorderBtns + badge + checkbox + thumb +
                 '<span class="file-name" title="' + it.name + '">' + it.name + '</span></div>';
         }
@@ -3277,7 +4240,8 @@
             item.addEventListener('click', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
                 var objType = this.getAttribute('data-obj-type');
-                var objId = parseInt(this.getAttribute('data-obj-id'));
+                var objIdStr = this.getAttribute('data-obj-id');
+                var objId = objIdStr !== '' ? parseInt(objIdStr) : null;
                 var imgId = this.getAttribute('data-id');
                 var objIdx = parseInt(this.getAttribute('data-obj-idx'));
 
@@ -3300,6 +4264,7 @@
                     tabFlashOvId = objId;
                 } else if (objType === 'border') {
                     selectedBorderObjId = objId;
+                    console.log('Selected border:', objId, 'found:', borderObjs.find(function(b) { return b.id === objId; }));
                 } else if (objType === 'unassigned') {
                     selectedUnassignedImgId = imgId;
                 }
@@ -3384,9 +4349,57 @@
         var imgId = e.target.getAttribute('data-img-id');
         var enabled = e.target.checked;
         imageManager.setEnabled(imgId, enabled);
+
+        if (!enabled) {
+            // Remove overlay that uses this image (but keep image in manager)
+            console.log('Unchecking image:', imgId, 'overlays before:', overlays.length);
+            var ovIdx = overlays.findIndex(function(o) { return o.imageId === imgId; });
+            console.log('Overlay match at index:', ovIdx);
+            if (ovIdx >= 0) {
+                if (selectedOverlayId === overlays[ovIdx].id) selectedOverlayId = null;
+                // Store overlay config so we can restore it
+                var img = imageManager.get(imgId);
+                if (img) img._savedOverlay = JSON.parse(JSON.stringify(overlays[ovIdx]));
+                overlays.splice(ovIdx, 1);
+            }
+            // Remove border that uses this image
+            var boIdx = borderObjs.findIndex(function(b) { return b.imageId === imgId; });
+            if (boIdx >= 0) {
+                if (selectedBorderObjId === borderObjs[boIdx].id) selectedBorderObjId = null;
+                var img = imageManager.get(imgId);
+                if (img) img._savedBorder = JSON.parse(JSON.stringify(borderObjs[boIdx]));
+                borderObjs.splice(boIdx, 1);
+            }
+        } else {
+            // Re-add overlay/border from saved config
+            var img = imageManager.get(imgId);
+            if (img && img._savedOverlay) {
+                var saved = img._savedOverlay;
+                var ov = createOverlay(imgId, saved.x, saved.y, saved.width, saved.height);
+                ov.mode = saved.mode; ov.fillColor = saved.fillColor;
+                ov.locked = saved.locked; ov.padding = saved.padding;
+                ov.imageOffsetX = saved.imageOffsetX || 0;
+                ov.imageOffsetY = saved.imageOffsetY || 0;
+                ov.imageScale = saved.imageScale || 0;
+                overlays.push(ov);
+                delete img._savedOverlay;
+            }
+            if (img && img._savedBorder) {
+                var saved = img._savedBorder;
+                var bo = createBorderObj(imgId, saved.x, saved.y, saved.width, saved.height);
+                bo.mode = saved.mode; bo.fillColor = saved.fillColor;
+                bo.locked = saved.locked; bo.opacity = saved.opacity;
+                borderObjs.push(bo);
+                delete img._savedBorder;
+            }
+        }
+
         if (collage) onRefresh();
         else renderFileList();
-        updateStatus(imageManager.enabledCount() + ' of ' + imageManager.count() + ' photos enabled.');
+        updateOverlayProps();
+        updateBorderProps();
+        updateCellInfo();
+        updateStatus(imageManager.enabledCount() + ' of ' + imageManager.count() + ' enabled.');
     }
 
     function onRemovePhoto() {
@@ -3559,8 +4572,9 @@
             }
         } else {
             var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
-            if (ix >= collage.marginLeft && ix <= collage.paperWidth - collage.marginRight &&
-                iy >= collage.marginTop && iy <= collage.paperHeight - collage.marginBottom) {
+            var wsLbb = getLayoutBoundingBox();
+            if (wsLbb && ix >= wsLbb.x && ix <= wsLbb.x + wsLbb.width &&
+                iy >= wsLbb.y && iy <= wsLbb.y + wsLbb.height) {
                 var wsRect = findWhitespaceRect(ix, iy);
                 if (wsRect && wsRect.width >= MIN_CELL_SIZE && wsRect.height >= MIN_CELL_SIZE) {
                     newWhitespace = wsRect;
@@ -3591,9 +4605,10 @@
     // that doesn't overlap any existing cell. Returns 80% fill rect.
     function findWhitespaceRect(ix, iy) {
         var gap = collage.gutterMargin;
-        // Start with the full usable area
-        var left = collage.marginLeft, right = collage.paperWidth - collage.marginRight;
-        var top = collage.marginTop, bottom = collage.paperHeight - collage.marginBottom;
+        // Start with the Layout Bounding Box
+        var lbb = getLayoutBoundingBox();
+        var left = lbb.x, right = lbb.x + lbb.width;
+        var top = lbb.y, bottom = lbb.y + lbb.height;
 
         // Constrain by each existing cell
         for (var i = 0; i < collage.cells.length; i++) {
@@ -3873,6 +4888,15 @@
         document.getElementById('border-color-row').style.display = bo.imageId ? 'none' : '';
         document.getElementById('border-image-row').style.display = bo.imageId ? '' : (document.getElementById('border-mode').value === 'image' ? '' : 'none');
         document.getElementById('border-image-name').textContent = img ? img.fileName : 'None';
+        // Inner rect
+        document.getElementById('border-fill-layout').checked = bo.fillLayout || false;
+        document.getElementById('border-inner-mode').value = bo.innerMode || 'auto';
+        document.getElementById('border-inner-custom').style.display = bo.innerMode === 'custom' ? '' : 'none';
+        var inner = getBorderInnerRect(bo);
+        document.getElementById('border-ix').value = inner.x.toFixed(3);
+        document.getElementById('border-iy').value = inner.y.toFixed(3);
+        document.getElementById('border-iw').value = inner.width.toFixed(3);
+        document.getElementById('border-ih').value = inner.height.toFixed(3);
     }
 
     function onBorderPropChange() {
@@ -3895,6 +4919,27 @@
         // Show/hide rows based on mode
         document.getElementById('border-color-row').style.display = (mode === 'image' && bo.imageId) ? 'none' : '';
         document.getElementById('border-image-row').style.display = mode === 'image' ? '' : 'none';
+        // Inner rect
+        // Fill layout — exclusive, only one border can have it
+        var wantsFill = document.getElementById('border-fill-layout').checked;
+        if (wantsFill && !bo.fillLayout) {
+            // Check if another border already has it
+            var otherFill = borderObjs.find(function(b) { return b.id !== bo.id && b.fillLayout; });
+            if (otherFill) {
+                alert('Another border ("' + (otherFill.label || 'Border ' + otherFill.id) + '") is already set to fill the layout area.\n\nUncheck it first before assigning this one.');
+                document.getElementById('border-fill-layout').checked = false;
+                wantsFill = false;
+            }
+        }
+        bo.fillLayout = wantsFill;
+        bo.innerMode = document.getElementById('border-inner-mode').value;
+        document.getElementById('border-inner-custom').style.display = bo.innerMode === 'custom' ? '' : 'none';
+        if (bo.innerMode === 'custom') {
+            bo.innerX = parseFloat(document.getElementById('border-ix').value) || 0;
+            bo.innerY = parseFloat(document.getElementById('border-iy').value) || 0;
+            bo.innerWidth = Math.max(0.5, parseFloat(document.getElementById('border-iw').value) || 1);
+            bo.innerHeight = Math.max(0.5, parseFloat(document.getElementById('border-ih').value) || 1);
+        }
         dirty = true;
     }
 
@@ -4004,9 +5049,64 @@
 
     function onCanvasMouseDown(e) {
         if (!interaction) return;
-        // Ensure canvas has focus so paste events work
         canvas.focus();
         var c = getCanvasCoords(e);
+
+        // Scale mode: drag layout bounding box
+        if (canvasMode === 'scale' && collage) {
+            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+            var lbb = getLayoutBoundingBox();
+            if (lbb) {
+                var hitDist = 0.3; // inches
+                var edge = null;
+                // Check edge hits
+                if (Math.abs(iy - lbb.y) < hitDist && ix >= lbb.x && ix <= lbb.x + lbb.width) edge = 'top';
+                else if (Math.abs(iy - (lbb.y + lbb.height)) < hitDist && ix >= lbb.x && ix <= lbb.x + lbb.width) edge = 'bottom';
+                else if (Math.abs(ix - lbb.x) < hitDist && iy >= lbb.y && iy <= lbb.y + lbb.height) edge = 'left';
+                else if (Math.abs(ix - (lbb.x + lbb.width)) < hitDist && iy >= lbb.y && iy <= lbb.y + lbb.height) edge = 'right';
+                // Check inside for move
+                else if (ix > lbb.x && ix < lbb.x + lbb.width && iy > lbb.y && iy < lbb.y + lbb.height) edge = 'move';
+
+                if (edge) {
+                    layoutBoxDrag = {
+                        edge: edge,
+                        startX: ix, startY: iy,
+                        startMargins: { top: collage.marginTop, bottom: collage.marginBottom, left: collage.marginLeft, right: collage.marginRight }
+                    };
+                    return;
+                }
+            }
+        }
+
+        // Align mode: Shift+click adds/removes cells from group
+        if ((canvasMode === 'align' || canvasMode === 'size') && e.shiftKey && showCells) {
+            var cell = interaction.hitTestCell(c[0], c[1]);
+            if (cell) {
+                if (selectedCellGroup.has(cell.id)) {
+                    selectedCellGroup.delete(cell.id);
+                } else {
+                    selectedCellGroup.add(cell.id);
+                }
+                interaction.selectedCellId = cell.id;
+                updateAlignCount();
+                dirty = true;
+                updateCellInfo();
+                return;
+            }
+        }
+        // Align mode: normal click also adds to group
+        if ((canvasMode === 'align' || canvasMode === 'size') && showCells) {
+            var cell = interaction.hitTestCell(c[0], c[1]);
+            if (cell) {
+                selectedCellGroup.add(cell.id);
+                interaction.selectedCellId = cell.id;
+                updateAlignCount();
+                dirty = true;
+                updateCellInfo();
+                return;
+            }
+        }
+
         interaction.onMouseDown(c[0], c[1], e.shiftKey);
         updateCellInfo();
     }
@@ -4014,6 +5114,61 @@
     function onCanvasMouseMove(e) {
         if (!interaction) return;
         var c = getCanvasCoords(e);
+
+        // Layout box drag in Scale mode
+        if (layoutBoxDrag && collage) {
+            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+            var dx = ix - layoutBoxDrag.startX, dy = iy - layoutBoxDrag.startY;
+            var sm = layoutBoxDrag.startMargins;
+            var minM = 0;
+
+            if (layoutBoxDrag.edge === 'top') {
+                collage.marginTop = Math.max(minM, sm.top + dy);
+            } else if (layoutBoxDrag.edge === 'bottom') {
+                collage.marginBottom = Math.max(minM, sm.bottom - dy);
+            } else if (layoutBoxDrag.edge === 'left') {
+                collage.marginLeft = Math.max(minM, sm.left + dx);
+            } else if (layoutBoxDrag.edge === 'right') {
+                collage.marginRight = Math.max(minM, sm.right - dx);
+            } else if (layoutBoxDrag.edge === 'move') {
+                collage.marginTop = Math.max(minM, sm.top + dy);
+                collage.marginBottom = Math.max(minM, sm.bottom - dy);
+                collage.marginLeft = Math.max(minM, sm.left + dx);
+                collage.marginRight = Math.max(minM, sm.right - dx);
+            }
+
+            // Sync settings inputs
+            document.getElementById('margin-top').value = collage.marginTop.toFixed(3);
+            document.getElementById('margin-bottom').value = collage.marginBottom.toFixed(3);
+            document.getElementById('margin-left').value = collage.marginLeft.toFixed(3);
+            document.getElementById('margin-right').value = collage.marginRight.toFixed(3);
+            // Live relayout cells
+            if (collage.cells.length > 0) relayoutCellsToFit();
+            dirty = true;
+            return;
+        }
+
+        // Layout box cursor in Scale mode
+        if (canvasMode === 'scale' && collage) {
+            var ix = interaction.d2i(c[0]), iy = interaction.d2i(c[1]);
+            var lbb = getLayoutBoundingBox();
+            if (lbb) {
+                var hitDist = 0.3;
+                if ((Math.abs(iy - lbb.y) < hitDist || Math.abs(iy - (lbb.y + lbb.height)) < hitDist) &&
+                    ix >= lbb.x && ix <= lbb.x + lbb.width) {
+                    canvas.style.cursor = 'ns-resize';
+                } else if ((Math.abs(ix - lbb.x) < hitDist || Math.abs(ix - (lbb.x + lbb.width)) < hitDist) &&
+                    iy >= lbb.y && iy <= lbb.y + lbb.height) {
+                    canvas.style.cursor = 'ew-resize';
+                } else if (ix > lbb.x && ix < lbb.x + lbb.width && iy > lbb.y && iy < lbb.y + lbb.height) {
+                    canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+                return;
+            }
+        }
+
         interaction.onMouseMove(c[0], c[1]);
         canvas.style.cursor = interaction.getCursorStyle(c[0], c[1]);
         if (interaction.state === ST_IDLE) updateCellInfo();
@@ -4021,6 +5176,15 @@
 
     function onCanvasMouseUp(e) {
         if (!interaction) return;
+        if (layoutBoxDrag) {
+            layoutBoxDrag = null;
+            // Relayout cells to fit new bounding box
+            if (collage && collage.cells.length > 0) {
+                relayoutCellsToFit();
+            }
+            dirty = true;
+            return;
+        }
         var c = e ? getCanvasCoords(e) : [0, 0];
         interaction.onMouseUp(c[0], c[1]);
         updateCellInfo();
@@ -4049,18 +5213,8 @@
         updateCellInfo();
     }
 
-    function updateModeBadge() {
-        if (!interaction) return;
-        if (interaction.resizeMode) {
-            modeBadge.textContent = 'RESIZE MODE';
-            modeBadge.className = 'mode-badge mode-resize';
-            modeHint.textContent = 'Drag edges to resize. Double-click to exit.';
-        } else {
-            modeBadge.textContent = 'LAYOUT MODE';
-            modeBadge.className = 'mode-badge mode-normal';
-            modeHint.textContent = 'Double-click to enter resize mode';
-        }
-    }
+    // updateModeBadge defined in init scope — this is the module-level fallback
+    // (overridden by the version in init that knows about canvasMode)
 
     function setPropsTypeLabel(type, text) {
         var label = document.getElementById('props-type-label');
@@ -4099,7 +5253,32 @@
         }
 
         if (!interaction || interaction.selectedCellId === null) {
-            if (selectedUnassignedImgId) return;
+            if (selectedUnassignedImgId) {
+                var uImg = imageManager.get(selectedUnassignedImgId);
+                if (uImg) {
+                    cellInfo.innerHTML = '<p><strong>Unassigned image</strong></p>';
+                    imagePropsSection.style.display = '';
+                    propFilename.textContent = uImg.fileName || '-';
+                    propDate.textContent = uImg.date || '-';
+                    propTime.textContent = uImg.time || '-';
+                    propResolution.textContent = uImg.naturalWidth + ' × ' + uImg.naturalHeight + ' px';
+                    propCellsize.textContent = 'Not in layout';
+                    cellLockRow.style.display = 'none';
+                }
+                return;
+            }
+            if (selectedBorderObjId !== null) {
+                cellInfo.innerHTML = '';
+                imagePropsSection.style.display = 'none';
+                cellLockRow.style.display = 'none';
+                return;
+            }
+            if (selectedOverlayId !== null) {
+                cellInfo.innerHTML = '';
+                imagePropsSection.style.display = 'none';
+                cellLockRow.style.display = 'none';
+                return;
+            }
             cellInfo.innerHTML = '<p class="hint">Select an object to view properties.</p>';
             imagePropsSection.style.display = 'none';
             cellLockRow.style.display = 'none';
@@ -4165,13 +5344,32 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    function updateModeBadge() {
+        var badge = document.getElementById('mode-badge');
+        if (!badge) return;
+        if (canvasMode === 'align') { badge.textContent = 'ALIGN'; badge.className = 'mode-badge mode-resize'; }
+        else if (canvasMode === 'size') { badge.textContent = 'SIZE'; badge.className = 'mode-badge mode-resize'; }
+        else if (canvasMode === 'scale') { badge.textContent = 'SCALE'; badge.className = 'mode-badge mode-normal'; }
+        else if (contentSubMode === 'edge-resize') { badge.textContent = 'EDGE RESIZE'; badge.className = 'mode-badge mode-resize'; }
+        else if (contentSubMode === 'insert') { badge.textContent = 'INSERT'; badge.className = 'mode-badge mode-normal'; }
+        else { badge.textContent = 'SELECT'; badge.className = 'mode-badge mode-normal'; }
+    }
+
     function updateLayoutScaleLabel() {
         var pct = parseInt(document.getElementById('layout-scale').value);
         var label = document.getElementById('layout-scale-val');
         if (collage) {
             var sw = (collage.paperWidth * pct / 100).toFixed(1);
             var sh = (collage.paperHeight * pct / 100).toFixed(1);
-            label.textContent = pct + '% ' + sw + '×' + sh + '"';
+            label.textContent = sw + '×' + sh + '"';
+            // Sync quick selector if it matches
+            var sizeKey = collage.paperWidth + 'x' + collage.paperHeight;
+            var quickSel = document.getElementById('page-size-quick');
+            var matched = false;
+            for (var i = 0; i < quickSel.options.length; i++) {
+                if (quickSel.options[i].value === sizeKey) { quickSel.value = sizeKey; matched = true; break; }
+            }
+            if (!matched) quickSel.value = 'custom';
         } else {
             label.textContent = pct + '%';
         }
