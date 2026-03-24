@@ -50,6 +50,27 @@
                 <div class="menu-item" id="identify-btn">Identify Elements</div>
             </div>
         </div>
+
+        <div class="menu-dropdown">
+            <button class="menu-btn">About ▾</button>
+            <div class="menu-panel">
+                <div class="menu-item" id="menu-about">About This App</div>
+                <div class="menu-item" id="menu-help">Help with Collage</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About modal -->
+    <div class="modal-backdrop" id="about-modal">
+        <div class="modal" style="text-align:center;min-width:300px;">
+            <h2 style="margin-bottom:12px;">Collage Editor</h2>
+            <p style="font-size:14px;color:#e0e0e0;">Photo collage layout tool for print-ready compositions</p>
+            <p style="margin-top:16px;font-size:13px;color:#a0a0c0;">Copyright &copy; 2026 MikeyGee &amp; GrAngie</p>
+            <p style="margin-top:8px;font-size:11px;color:#666;" id="about-build-date"></p>
+            <div class="modal-buttons" style="justify-content:center;margin-top:20px;">
+                <button id="about-close-btn" class="primary">OK</button>
+            </div>
+        </div>
     </div>
 
     <!-- Settings dialog -->
@@ -2864,6 +2885,21 @@
 
         // Menu item handlers
         document.getElementById('menu-load-photos').addEventListener('click', function() { fileInput.click(); });
+
+        // About menu
+        document.getElementById('menu-about').addEventListener('click', function() {
+            document.getElementById('about-build-date').textContent = 'Built: 2026-03-23';
+            document.getElementById('about-modal').classList.add('visible');
+        });
+        document.getElementById('about-close-btn').addEventListener('click', function() {
+            document.getElementById('about-modal').classList.remove('visible');
+        });
+        document.getElementById('about-modal').addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('visible');
+        });
+        document.getElementById('menu-help').addEventListener('click', function() {
+            window.open('help.html', '_blank');
+        });
         document.getElementById('menu-load-project').addEventListener('click', function() { document.getElementById('load-input').click(); });
         document.getElementById('tool-calendar').addEventListener('click', function() {
             alert('Calendar Wizard\n\nThis feature is coming soon.\n\nIt will allow you to create 12, 18, or 24 month calendars, assigning a saved collage layout to each month.');
@@ -5379,6 +5415,6 @@
 
     document.addEventListener('DOMContentLoaded', init);
     </script>
-<div style="position:fixed;bottom:2px;right:8px;font-size:10px;color:#e0e0e0;pointer-events:none;">This page created at 2026-03-22 01:45 EST</div>
+<div style="position:fixed;bottom:2px;right:8px;font-size:10px;color:#e0e0e0;pointer-events:none;">This page created at 2026-03-23 EST</div>
 </body>
 </html>

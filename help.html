@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collage Editor — Help & Tutorial</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    line-height: 1.7;
+    padding: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+h1 { color: #e94560; margin-bottom: 8px; font-size: 28px; }
+h2 { color: #e94560; margin-top: 32px; margin-bottom: 12px; font-size: 20px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; }
+h3 { color: #2196F3; margin-top: 20px; margin-bottom: 8px; font-size: 16px; }
+p { margin-bottom: 10px; }
+ul, ol { margin-left: 24px; margin-bottom: 12px; }
+li { margin-bottom: 4px; }
+kbd {
+    background: #0f3460;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: #e0e0e0;
+    border: 1px solid #1a1a4e;
+}
+.badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: #fff;
+    vertical-align: middle;
+}
+.badge-cell { background: #4CAF50; }
+.badge-overlay { background: #2196F3; }
+.badge-border { background: #FF9800; }
+.section { background: #16213e; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
+.tip { background: #0f3460; border-left: 3px solid #4CAF50; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 13px; }
+.warning { background: #0f3460; border-left: 3px solid #FF9800; padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 13px; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+th, td { padding: 6px 12px; text-align: left; border-bottom: 1px solid #0f3460; font-size: 13px; }
+th { color: #a0a0c0; font-weight: 600; }
+a { color: #2196F3; }
+.subtitle { color: #a0a0c0; font-size: 14px; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<h1>Collage Editor</h1>
+<p class="subtitle">Photo collage layout tool for print-ready compositions</p>
+
+<div class="section">
+<h2>Getting Started</h2>
+<ol>
+    <li><strong>Add photos</strong> — Click <span class="badge badge-cell">+ Photo</span> in the sidebar, use <strong>File &gt; Load Photos</strong>, or drag images onto the canvas.</li>
+    <li><strong>Generate a layout</strong> — Use <strong>Layout &gt; Generate Layout</strong> (uniform grid) or <strong>Layout &gt; Generate Random Layout</strong> (varied sizes).</li>
+    <li><strong>Edit</strong> — Click cells to select, drag to pan, scroll to zoom, resize with corner handles.</li>
+    <li><strong>Export</strong> — Use <strong>File &gt; Export JPEG</strong> to save your collage at full DPI.</li>
+</ol>
+<div class="tip">You can also paste images from your clipboard with <kbd>Ctrl+V</kbd> — they appear as overlays.</div>
+</div>
+
+<h2>Three Object Types</h2>
+<div class="section">
+<h3><span class="badge badge-border">B</span> Border Objects</h3>
+<p>Drawn first (behind everything). Use for backgrounds, frames, and mattes.</p>
+<ul>
+    <li>Click <span class="badge badge-border">+ Border</span> to add a full-page border element</li>
+    <li>Set fill to <strong>Solid Color</strong> or <strong>Image File</strong> in properties</li>
+    <li>Check <strong>"Fill layout area too"</strong> to use as a full background image</li>
+    <li>Each border has an <strong>inner rect</strong> (auto from margins, or custom) that defines the layout area</li>
+    <li>Drop an image onto the <strong>"Drop background image here"</strong> zone in properties</li>
+</ul>
+
+<h3><span class="badge badge-cell">C</span> Cell Objects (Photos)</h3>
+<p>The main photo content, arranged by the layout engine.</p>
+<ul>
+    <li>Load photos via <strong>+ Photo</strong>, <strong>File &gt; Load Photos</strong>, or drag-drop</li>
+    <li>Click <strong>Layout &gt; Generate Layout</strong> or <strong>Fixed Size Layout</strong> to arrange</li>
+    <li>Subject to layout automation (Generate, Randomize, Refresh)</li>
+    <li>Each cell has zoom, pan, position, size, and lock controls</li>
+</ul>
+
+<h3><span class="badge badge-overlay">OV</span> Overlay Objects</h3>
+<p>Creative elements drawn on top of everything. Text, artwork, decorations.</p>
+<ul>
+    <li>Click <span class="badge badge-overlay">+ Text</span> to create a text overlay with live preview</li>
+    <li><kbd>Ctrl+V</kbd> to paste from clipboard (images, Word art, etc.)</li>
+    <li>Not affected by layout automation — manually positioned</li>
+    <li>Support pan and zoom within their bounds (drag to pan, scroll to zoom)</li>
+</ul>
+</div>
+
+<h2>Menu Bar</h2>
+<div class="section">
+<h3>File</h3>
+<table>
+    <tr><td><strong>Load Photos</strong></td><td>Open file picker to load images</td></tr>
+    <tr><td><strong>Load Project</strong></td><td>Load a saved .collage, .json, or .zip project</td></tr>
+    <tr><td><strong>Save Project</strong></td><td>Save as .collage file (images embedded as base64)</td></tr>
+    <tr><td><strong>Share Project</strong></td><td>Save as .zip with separate image files (portable)</td></tr>
+    <tr><td><strong>Export JPEG</strong></td><td>Export the collage as a high-resolution JPEG</td></tr>
+</table>
+
+<h3>Layout</h3>
+<table>
+    <tr><td><strong>Generate Layout</strong></td><td>Create cell layout using current settings (equal or random)</td></tr>
+    <tr><td><strong>Fixed Size Layout</strong></td><td>Generate with all cells the same size (uniform grid)</td></tr>
+    <tr><td><strong>Generate Random Layout</strong></td><td>Generate with varied cell sizes (BSP algorithm)</td></tr>
+    <tr><td><strong>Randomize</strong></td><td>Re-randomize the current layout</td></tr>
+    <tr><td><strong>Refresh</strong></td><td>Redraw, removing unchecked/deleted images but preserving positions</td></tr>
+    <tr><td><strong>Page Settings</strong></td><td>Open settings dialog for paper size, DPI, margins, etc.</td></tr>
+</table>
+
+<h3>View</h3>
+<table>
+    <tr><td><strong>Show Cells / Overlays / Borders</strong></td><td>Toggle visibility of each object group (checkmark = visible)</td></tr>
+    <tr><td><strong>Identify Elements</strong></td><td>Flash large numbers on all cells and overlays for 5 seconds</td></tr>
+</table>
+</div>
+
+<h2>Canvas Mode Bar</h2>
+<div class="section">
+<h3>Object Visibility</h3>
+<p>Three toggle buttons: <span class="badge badge-cell">Photo</span> <span class="badge badge-overlay">Text</span> <span class="badge badge-border">Border</span></p>
+<p>Click to show/hide each group. Object counts shown in parentheses. Hidden groups can't be clicked or edited on the canvas.</p>
+
+<h3>Content Mode (default)</h3>
+<p>Dropdown with three sub-modes:</p>
+<ul>
+    <li><strong>Select / Edit</strong> — Click to select, drag to pan, scroll to zoom, corner handles to resize</li>
+    <li><strong>Insert</strong> — Drop images to replace or insert (5-zone: replace, above, below, left, right)</li>
+    <li><strong>Edge Resize</strong> — Drag shared edges between adjacent cells</li>
+</ul>
+
+<h3>Align Mode</h3>
+<p>Multi-select cells and snap their edges:</p>
+<ul>
+    <li>Click cells to add to selection (purple dashed outline)</li>
+    <li><kbd>Shift+Click</kbd> to toggle a cell in/out of selection</li>
+    <li><strong>⬆T</strong> snap tops, <strong>⬇B</strong> snap bottoms, <strong>⬅L</strong> snap lefts, <strong>➡R</strong> snap rights</li>
+    <li>Arrow keys move the entire group</li>
+</ul>
+
+<h3>Size Mode</h3>
+<p>Multi-select cells and equalize dimensions:</p>
+<ul>
+    <li>Same selection behavior as Align mode</li>
+    <li><strong>↕H</strong> make all selected cells the same height (averaged)</li>
+    <li><strong>↔W</strong> make all selected cells the same width (averaged)</li>
+</ul>
+
+<h3>Scale Mode</h3>
+<p>Adjust the layout area and output size:</p>
+<ul>
+    <li><strong>Drag the blue layout box</strong> edges to adjust individual margins</li>
+    <li><strong>Drag inside the box</strong> to move the entire layout area (asymmetric positioning)</li>
+    <li>Cells rescale proportionally in real-time as you drag</li>
+    <li><strong>Output size</strong> dropdown for paper presets, slider for proportional scaling</li>
+</ul>
+</div>
+
+<h2>Keyboard Shortcuts</h2>
+<div class="section">
+<table>
+    <tr><th>Key</th><th>Action</th></tr>
+    <tr><td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td><td>Cycle through cells (with 3-second green flash)</td></tr>
+    <tr><td><kbd>Arrow keys</kbd></td><td>Move selected cell/overlay by 0.25"</td></tr>
+    <tr><td><kbd>-</kbd></td><td>Shrink selected element by 10%</td></tr>
+    <tr><td><kbd>+</kbd> or <kbd>=</kbd></td><td>Grow selected element by ~10%</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>-</kbd></td><td>Add white padding margin inside element</td></tr>
+    <tr><td><kbd>Shift</kbd>+<kbd>+</kbd></td><td>Reduce white padding margin</td></tr>
+    <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>Remove selected overlay</td></tr>
+    <tr><td><kbd>Ctrl+V</kbd></td><td>Paste image from clipboard as overlay</td></tr>
+</table>
+</div>
+
+<h2>Mouse Interactions</h2>
+<div class="section">
+<table>
+    <tr><th>Action</th><th>Result</th></tr>
+    <tr><td>Click cell/overlay</td><td>Select it</td></tr>
+    <tr><td>Drag on selected cell</td><td>Pan image within cell</td></tr>
+    <tr><td>Scroll wheel on cell</td><td>Zoom in/out</td></tr>
+    <tr><td>Drag corner handles</td><td>Resize element</td></tr>
+    <tr><td>Hold 1 second + drag</td><td>Move entire cell/overlay freely</td></tr>
+    <tr><td><kbd>Shift</kbd>+drag cell</td><td>Swap images between cells</td></tr>
+    <tr><td>Drop image on cell</td><td>Replace or insert (5-zone)</td></tr>
+    <tr><td>Drop image in whitespace</td><td>Create new cell (80% of open area)</td></tr>
+</table>
+<div class="tip">During a drag-drop, press <kbd>Space</kbd> for Replace, or arrow keys to force Insert direction. A floating tooltip shows the active zone.</div>
+</div>
+
+<h2>Properties Panel</h2>
+<div class="section">
+<p>The Properties panel in the sidebar adapts to the selected object type:</p>
+
+<h3>Cell Properties</h3>
+<ul>
+    <li>File info (name, date, time, resolution, cell size)</li>
+    <li>Zoom slider and numeric input</li>
+    <li>Fix Position — lock to prevent move/resize</li>
+    <li>Raise to Top / Send to Back — draw order</li>
+    <li>Reset Crop / Add to Layout / Remove</li>
+    <li><strong>→ Overlay</strong> — convert cell to overlay</li>
+</ul>
+
+<h3>Overlay Properties</h3>
+<ul>
+    <li>Source image info</li>
+    <li>Fix Position lock</li>
+    <li>Position (x, y) and Size (w, h) in inches</li>
+    <li>Mode: Transparent or Filled (with color picker)</li>
+    <li>Export Source PNG — save the raw source bitmap for inspection</li>
+    <li><strong>→ Cell</strong> — convert overlay to cell</li>
+</ul>
+
+<h3>Border Properties</h3>
+<ul>
+    <li>Fix Position lock</li>
+    <li>Position and Size</li>
+    <li>Fill: Solid Color (with opacity slider) or Image File</li>
+    <li>Drop zone for background images</li>
+    <li><strong>Fill layout area too</strong> — makes the border a full background (exclusive, only one at a time)</li>
+    <li>Inner rect: Auto (from margins) or Custom (defines layout bounding box)</li>
+</ul>
+</div>
+
+<h2>Objects List</h2>
+<div class="section">
+<p>The sidebar Objects list shows all items in one unified view with type badges:</p>
+<ul>
+    <li><span class="badge badge-border">B</span> Border objects (drawn first)</li>
+    <li><span class="badge badge-cell">C</span> Cell objects (photos, in draw order)</li>
+    <li><span class="badge badge-overlay">OV</span> Overlay objects (drawn on top)</li>
+    <li><span class="badge" style="background:#555;">—</span> Unassigned images (not in layout)</li>
+</ul>
+<p>Filter buttons: <strong>All</strong> | <strong>Cells</strong> | <strong>Overlays</strong> | <strong>Borders</strong></p>
+<p>Each item has:</p>
+<ul>
+    <li><strong>▲/▼</strong> reorder arrows (left side) — change draw order</li>
+    <li><strong>Checkbox</strong> — uncheck to remove from layout (re-check to restore)</li>
+    <li><strong>Thumbnail</strong> with hover preview (150px popup)</li>
+    <li><strong>Click</strong> to select and show properties (green flash on canvas)</li>
+</ul>
+</div>
+
+<h2>Text Overlay Creator</h2>
+<div class="section">
+<ol>
+    <li>Click <span class="badge badge-overlay">+ Text</span> in the sidebar</li>
+    <li>Type your text in the editor (multi-line supported)</li>
+    <li>Choose font, size, color, bold, italic</li>
+    <li>A <strong>3x live preview</strong> appears centered on the canvas</li>
+    <li>Click <strong>Create Overlay</strong> to finalize as a transparent PNG overlay</li>
+    <li>Click <strong>Cancel</strong> to exit without creating</li>
+</ol>
+<div class="tip">The preview shows at 3x actual size so you can see font details. The final overlay will be smaller.</div>
+</div>
+
+<h2>Save & Share</h2>
+<div class="section">
+<h3>Save Project (.collage)</h3>
+<p>Saves everything as a single JSON file with images embedded as base64. Large files but fully self-contained.</p>
+
+<h3>Share Project (.zip)</h3>
+<p>Creates a compressed ZIP with:</p>
+<ul>
+    <li><code>images/</code> folder with separate image files</li>
+    <li><code>project.collage</code> JSON referencing images by filename</li>
+</ul>
+<p>To open a shared project: <strong>File &gt; Load Project</strong> and select the .zip file.</p>
+
+<h3>Export JPEG</h3>
+<p>Exports the collage at the configured DPI and paper size. No UI chrome (selection outlines, handles) in the export. Scale mode slider affects export dimensions.</p>
+</div>
+
+<h2>Settings (Layout &gt; Page Settings)</h2>
+<div class="section">
+<table>
+    <tr><td><strong>Page size</strong></td><td>Preset or custom paper dimensions</td></tr>
+    <tr><td><strong>DPI</strong></td><td>Export resolution (72–600, default 300)</td></tr>
+    <tr><td><strong>Margins</strong></td><td>T/B/L/R insets defining default layout area</td></tr>
+    <tr><td><strong>Cell gap</strong></td><td>Spacing between cells in generated layouts</td></tr>
+    <tr><td><strong>Equal sizes</strong></td><td>Generate uniform grid vs. random BSP splitting</td></tr>
+    <tr><td><strong>+/- resize</strong></td><td>Grow/shrink selected only, or entire row/column</td></tr>
+    <tr><td><strong>Edge trim</strong></td><td>Pixels to crop from pasted overlay edges (fixes Word clipboard artifacts)</td></tr>
+</table>
+</div>
+
+<h2>Tips & Tricks</h2>
+<div class="section">
+<div class="tip"><strong>Background image:</strong> Click + Border, drop your background image, check "Fill layout area too". Use Scale mode to drag the layout box inward for a frame effect.</div>
+<div class="tip"><strong>Can't select an overlay?</strong> Click it in the Objects list instead — guaranteed selection regardless of overlap.</div>
+<div class="tip"><strong>Fix Position:</strong> Check this on any element to lock it from accidental moves. You can still select it for inspection.</div>
+<div class="tip"><strong>Identify:</strong> Click Identify (or use View menu) to flash numbers on all elements for 5 seconds — match to the Objects list.</div>
+<div class="tip"><strong>Word art artifacts:</strong> If pasted overlay text has faint lines, set Edge Trim to 1-2px in Settings.</div>
+<div class="warning"><strong>Large projects:</strong> Save frequently. The browser has no auto-save. Use Share Project for portable backup.</div>
+</div>
+
+<p style="margin-top:30px;color:#555;font-size:11px;">Collage Editor — built with vanilla JavaScript, Canvas API, and no build tools.</p>
+
+</body>
+</html>
